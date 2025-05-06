@@ -16,8 +16,11 @@ public class Program
 		string accessToken = Console.ReadLine();
 		apiOptions = new PersonRetrievalServiceOptions(accessToken);
 		api = new PersonRetrievalService(apiOptions);
-		var person = await api.FindPersonByOrcid("0000-0002-0272-9909");
-		Console.WriteLine(person.ToString());
+		var people = await api.FindPeoplyByName("Mark", 3);
+		foreach (var person in people)
+		{
+			Console.WriteLine(person);
+		}
 
 	}
 
