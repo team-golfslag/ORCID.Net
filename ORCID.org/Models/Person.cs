@@ -4,15 +4,18 @@ using System.Text.Json.Serialization;
 
 public class Person
 {
-    [JsonPropertyName("given-name")]
-    public required string FirstName { get; set; }
-    
-    [JsonPropertyName("family-name")]
-    public required string LastName { get; set; }
-    
-    [JsonPropertyName("credit-name")]
-    public required string CreditName { get; set; }
-    
-    [JsonPropertyName("biography")]
-    public required string Biography { get; set; }
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string CreditName { get; set; }
+    public string Biography { get; set; }
+
+    public Person(string firstName, string lastName, string creditName, string biography)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        CreditName = creditName;
+        Biography = biography;
+    }
+
+    public override string ToString() => $"{FirstName} {LastName} {CreditName} {Biography}";
 }

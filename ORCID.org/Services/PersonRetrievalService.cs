@@ -1,11 +1,13 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ORCID.org.Models;
 using ORCID.org.ORCIDServiceExceptions;
 
 namespace ORCID.org.Services;
 
 using System.Net.Http.Json;
+using JsonConverters;
 
 public class PersonRetrievalService
 {
@@ -30,7 +32,12 @@ public class PersonRetrievalService
             var response = await _httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
-                var person = await response.Content.ReadFromJsonAsync<Person>(_options.JsonSerializerOptions);
+                var person = await JsonSerializer.DeserializeAsync<Person>(
+                    await response.Content.ReadAsStreamAsync(),
+                    new JsonSerializerOptions
+                    {
+                        Converters = { new PersonJsonConverter() }
+                    });
                 return person;
             }
             else

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.6.33424.131
 MinimumVisualStudioVersion = 10.0.40219.1
 
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORCID.org", "ORCID.org\ORCID.org.csproj", "{ABCD1234-1111-2222-3333-ORCID00000001}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORCID.org", "ORCID.org\ORCID.org.csproj", "{00000000-0000-0000-0000-000000000000}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORCID.org.Tests", "ORCID.org.Tests\ORCID.org.Tests.csproj", "{EFGH5678-4444-5555-6666-ORCID00000002}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ORCID.org.Tests", "ORCID.org.Tests\ORCID.org.Tests.csproj", "{00000000-0000-0000-0000-000000000000}"
 EndProject
 
 Global
@@ -14,14 +14,8 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{ABCD1234-1111-2222-3333-ORCID00000001}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ABCD1234-1111-2222-3333-ORCID00000001}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ABCD1234-1111-2222-3333-ORCID00000001}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ABCD1234-1111-2222-3333-ORCID00000001}.Release|Any CPU.Build.0 = Release|Any CPU
 
-		{EFGH5678-4444-5555-6666-ORCID00000002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EFGH5678-4444-5555-6666-ORCID00000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EFGH5678-4444-5555-6666-ORCID00000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EFGH5678-4444-5555-6666-ORCID00000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00000000-0000-0000-0000-000000000000}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00000000-0000-0000-0000-000000000000}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal
