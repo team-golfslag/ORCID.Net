@@ -12,11 +12,10 @@ public class PersonRetrievalService
     public HttpClient _httpClient;
     public PersonRetrievalServiceOptions _options;
 
-    public PersonRetrievalService(HttpClient httpClient, PersonRetrievalServiceOptions options)
+    public PersonRetrievalService(PersonRetrievalServiceOptions options)
     {
-        _httpClient = httpClient;
+        _httpClient = new();
         _options = options;
-        
         _httpClient.BaseAddress = new Uri(_options.BaseUrl);
     }
 

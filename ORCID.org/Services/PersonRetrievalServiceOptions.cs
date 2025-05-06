@@ -5,7 +5,7 @@ namespace ORCID.org.Services;
 
 public class PersonRetrievalServiceOptions
 {
-    public string BaseUrl { get; set; } = "https://api.sandbox.orcid.org/v2.1/";
+    public string BaseUrl { get; set; } = "https://pub.sandbox.orcid.org/v3.0/";
     public string MediaHeader { get; set; } = "Accept: application/vnd.orcid+json";
     
     public string AuthorizationCode { get; set; } = "";
