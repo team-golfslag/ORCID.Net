@@ -4,6 +4,7 @@ namespace ORCID.Net.Models;
 
 public class Person
 {
+
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public string CreditName { get; set; }
@@ -19,3 +20,4 @@ public class Person
 
     public override string ToString() => $"{FirstName} {LastName} {CreditName} {Biography}";
 }
+

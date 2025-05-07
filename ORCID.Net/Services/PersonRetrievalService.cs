@@ -7,7 +7,6 @@ using ORCID.Net.ORCIDServiceExceptions;
 namespace ORCID.Net.Services;
 
 
-
 public class PersonRetrievalService
 {
     public HttpClient _httpClient;
@@ -20,23 +19,27 @@ public class PersonRetrievalService
         _httpClient.BaseAddress = new Uri(_options.BaseUrl);
     }
 
+
     public async Task<Person> FindPersonByOrcid(string orcId)
     {
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"{orcId}/person");
+
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AuthorizationCode);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(_options.MediaHeader));
             
             var response = await _httpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
+
                 var person = await JsonSerializer.DeserializeAsync<Person>(
                     await response.Content.ReadAsStreamAsync(),
                     new JsonSerializerOptions
                     {
                         Converters = { new PersonJsonConverter() }
                     });
+
                 return person;
             }
             else
@@ -90,4 +93,5 @@ public class PersonRetrievalService
         }
     }
     
+
 }
