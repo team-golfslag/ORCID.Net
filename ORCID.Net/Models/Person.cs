@@ -1,6 +1,6 @@
-namespace ORCID.org.Models;
-
 using System.Text.Json.Serialization;
+
+namespace ORCID.Net.Models;
 
 public class Person
 {
