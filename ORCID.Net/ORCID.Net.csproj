@@ -4,8 +4,6 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>ORCID.Net</RootNamespace>
-        <ProjectGuid>{9676de02-2b13-4205-8323-f264e952fcf2}</ProjectGuid>
     </PropertyGroup>
 
 </Project>
