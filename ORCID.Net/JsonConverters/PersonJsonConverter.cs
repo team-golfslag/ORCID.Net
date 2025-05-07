@@ -1,10 +1,10 @@
-using ORCID.org.ORCIDServiceExceptions;
+using ORCID.Net.ORCIDServiceExceptions;
 
-namespace ORCID.org.JsonConverters;
+namespace ORCID.Net.JsonConverters;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using ORCID.org.Models;
+using Models;
 
 public class PersonJsonConverter : JsonConverter<Person>
 {

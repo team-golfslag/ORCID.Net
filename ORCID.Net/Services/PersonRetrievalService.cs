@@ -1,11 +1,12 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using ORCID.Net.Models;
+using ORCID.Net.JsonConverters;
 using ORCID.Net.ORCIDServiceExceptions;
 
 namespace ORCID.Net.Services;
 
-using JsonConverters;
+
 
 public class PersonRetrievalService
 {

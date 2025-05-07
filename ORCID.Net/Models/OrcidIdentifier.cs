@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ORCID.org.Models;
+namespace ORCID.Net.Models;
 
 public class OrcidIdentifier
 {
