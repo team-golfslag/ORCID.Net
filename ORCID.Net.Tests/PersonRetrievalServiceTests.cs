@@ -1,4 +1,6 @@
-namespace ORCID.org.Tests;
+﻿using Xunit;
+
+namespace ORCID.Net.Tests;
 
 public class UnitTest1
 {
@@ -7,3 +9,4 @@ public class UnitTest1
     {
     }
 }
+

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ORCID.org.Services;
+namespace ORCID.Net.Services;
 
 public class PersonRetrievalServiceOptions
 {

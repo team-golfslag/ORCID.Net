@@ -1,9 +1,9 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
-using ORCID.org.Models;
-using ORCID.org.ORCIDServiceExceptions;
+using ORCID.Net.Models;
+using ORCID.Net.ORCIDServiceExceptions;
 
-namespace ORCID.org.Services;
+namespace ORCID.Net.Services;
 
 using JsonConverters;
 
