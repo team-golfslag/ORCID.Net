@@ -1,4 +1,4 @@
-namespace ORCID.org.Tests;
+namespace ORCID.Net.Tests;
 
 public class UnitTest1
 {

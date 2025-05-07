@@ -1,4 +1,4 @@
-namespace ORCID.org.ORCIDServiceExceptions;
+namespace ORCID.Net.ORCIDServiceExceptions;
 
 public class ORCIDServiceException : Exception
 {
