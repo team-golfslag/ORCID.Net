@@ -7,7 +7,7 @@
 
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
-        <RootNamespace>ORCID.org.Tests</RootNamespace>
+        <RootNamespace>ORCID.Net.Tests</RootNamespace>
         <ProjectGuid>{860c5929-b53f-4f46-be86-0f515105cb94}</ProjectGuid>
     </PropertyGroup>
 
