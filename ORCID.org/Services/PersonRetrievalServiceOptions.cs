@@ -17,11 +17,5 @@ public class PersonRetrievalServiceOptions
         AuthorizationCode = authorizationCode;
     }
 
-    public JsonSerializerOptions JsonSerializerOptions { get; set; } = new()
-    {
-        Converters =
-        {
-            new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower),
-        },
-    };
+    
 }

@@ -1,12 +1,10 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using ORCID.org.Models;
 using ORCID.org.ORCIDServiceExceptions;
 
 namespace ORCID.org.Services;
 
-using System.Net.Http.Json;
 using JsonConverters;
 
 public class PersonRetrievalService
@@ -21,11 +19,11 @@ public class PersonRetrievalService
         _httpClient.BaseAddress = new Uri(_options.BaseUrl);
     }
 
-    public async Task<Person> FindPersonByOrcid(string orcID)
+    public async Task<Person> FindPersonByOrcid(string orcId)
     {
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"{orcID}/person");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{orcId}/person");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AuthorizationCode);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(_options.MediaHeader));
             
