@@ -3,6 +3,7 @@ using Moq;
 using Moq.Protected;
 using ORCID.Net.Services;
 using ORCID.Net.Models;
+using ORCID.Net.ORCIDServiceExceptions;
 using Xunit;
 
 namespace ORCID.Net.Tests;
@@ -282,6 +283,121 @@ public class PersonRetrievalServiceTests
         List<Person> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
         Assert.NotNull(people);
         Assert.Empty(people);
+    }
+
+    [Fact]
+    public async Task PersonSearchByNameBadResponse()
+    {
+        _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+
+    }
+    
+    [Fact]
+    public async Task PersonSearchByNameHttpException()
+    {
+        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+
+    }
+    
+    [Fact]
+    public async Task PersonSearchByNameJsonException()
+    {
+        _response.StatusCode = System.Net.HttpStatusCode.OK;
+        string json = @"
+        {
+          ""result"" : [],
+        ""num-found"": 0
+        }}
+        ";
+        MemoryStream peopleStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+        _response.Content = new StreamContent(peopleStream);
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+    }
+    
+    [Fact]
+    public async Task PersonRetrievalBadResponse()
+    {
+        _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+
+    }
+    
+    [Fact]
+    public async Task PersonRetrievalHttpException()
+    {
+        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+
+    }
+    
+    [Fact]
+    public async Task PersonRetrievalJsonException()
+    {
+        _response.StatusCode = System.Net.HttpStatusCode.OK;
+        string json = @"
+        {
+          ""last-modified-date"": null,
+          ""name"": {
+            ""created-date"": {
+              ""value"": 1487783344822
+            },
+            ""last-modified-date"": {
+              ""value"": 1487783345135
+            },
+            ""given-names"": {
+              ""value"": ""mark""
+            },
+            ""family-name"": null,
+            ""credit-name"": null,
+            ""source"": null,
+            ""visibility"": ""PUBLIC"",
+            ""path"": ""0000-0001-8564-3504""
+          },
+          ""other-names"": {
+            ""last-modified-date"": null,
+            ""other-name"": [],
+            ""path"": ""/0000-0001-8564-3504/other-names""
+          },
+          ""biography"": null,
+          ""researcher-urls"": {
+            ""last-modified-date"": null,
+            ""researcher-url"": [],
+            ""path"": ""/0000-0001-8564-3504/researcher-urls""
+          },
+          ""emails"": {
+            ""last-modified-date"": null,
+            ""email"": [],
+            ""path"": ""/0000-0001-8564-3504/email""
+          },
+          ""addresses"": {
+            ""last-modified-date"": null,
+            ""address"": [],
+            ""path"": ""/0000-0001-8564-3504/address""
+          },
+          ""keywords"": {
+            ""last-modified-date"": null,
+            ""keyword"": [],
+            ""path"": ""/0000-0001-8564-3504/keywords""
+          },
+          ""external-identifiers"": {
+            ""last-modified-date"": null,
+            ""external-identifier"": [],
+            ""path"": ""/0000-0001-8564-3504/external-identifiers""
+          },
+          ""path"": ""/0000-0001-8564-3504/person""
+        }
+        ";
+        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+        _response.Content = new StreamContent(personStream);
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
     }
     
 }

@@ -8,11 +8,6 @@ namespace ORCID.Net.Tests;
 
 public class PersonRetrievalServiceIntegrationTests
 {
-    [Fact]
-    public void Test1()
-    {
-        
-        
-    }
+    
     
 }
