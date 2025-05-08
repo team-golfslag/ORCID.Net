@@ -14,9 +14,8 @@ public class PersonRetrievalService
 
     public PersonRetrievalService(PersonRetrievalServiceOptions options)
     {
-        _httpClient = new();
         _options = options;
-        _httpClient.BaseAddress = new Uri(_options.BaseUrl);
+        _httpClient = _options.BuildHttpClient();
     }
 
 
@@ -57,7 +56,7 @@ public class PersonRetrievalService
         }
     }
     
-    public async Task<List<Person>> FindPeoplyByName(string nameQuery, int preferredAmountOfResults)
+    public async Task<List<Person>> FindPeopleByName(string nameQuery, int preferredAmountOfResults)
     {
         try
         {

@@ -16,7 +16,7 @@ public class PersonJsonConverter : JsonConverter<Person>
         var nameElement = root.GetProperty("name");
 
         string? firstName = nameElement.GetProperty("given-names").GetProperty("value").GetString();
-        string? lastName = nameElement.TryGetProperty("credit-name", out var last) && last.ValueKind == JsonValueKind.Object
+        string? lastName = nameElement.TryGetProperty("family-name", out var last) && last.ValueKind == JsonValueKind.Object
             ? last.GetProperty("value").GetString()
             : null;
         string? creditName = nameElement.TryGetProperty("credit-name", out var credit) && credit.ValueKind == JsonValueKind.Object
