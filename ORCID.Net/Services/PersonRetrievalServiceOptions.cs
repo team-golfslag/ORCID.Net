@@ -10,9 +10,7 @@ public class PersonRetrievalServiceOptions
     public const string OrcidSandboxUrl = "https://pub.sandbox.orcid.org/v3.0/";
 
     public const string JsonMediaHeader = "application/vnd.orcid+json";
-    
-    public const string XmlMediaHeader = "application/vnd.orcid+xml";
-    
+
     //Current implementation of searching by name on orcid means only getting matching ID's back not the actual names
     //which means that we then have to fetch the name for each individual ID as well which is expensive therefore we limit this.
     public const int MaxRecommendedResults = 15;
