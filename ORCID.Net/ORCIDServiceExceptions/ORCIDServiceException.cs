@@ -1,13 +1,13 @@
 namespace ORCID.Net.ORCIDServiceExceptions;
 
-public class ORCIDServiceException : Exception
+public class OrcidServiceException : Exception
 {
-    public ORCIDServiceException(string exceptionMessage)
+    public OrcidServiceException(string exceptionMessage)
         : base(exceptionMessage)
     {
     }
     
-    public ORCIDServiceException(string exceptionMessage, Exception innerException)
+    public OrcidServiceException(string exceptionMessage, Exception innerException)
         : base(exceptionMessage, innerException)
     {
     }

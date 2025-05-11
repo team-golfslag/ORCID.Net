@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Text.Json;
 using ORCID.Net.Models;
 using ORCID.Net.JsonConverters;
@@ -36,24 +35,24 @@ public class PersonRetrievalService
 
             HttpResponseMessage response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                throw new ORCIDServiceException("Failed to retrieve person", new());
+                throw new OrcidServiceException("Failed to retrieve person", new());
 
             Person? person = await JsonSerializer.DeserializeAsync<Person>(
                 await response.Content.ReadAsStreamAsync(),
                 _jsonSerializerOptions);
             
             if (person == null)
-                throw new ORCIDServiceException("Failed to deserialize person", new());
+                throw new OrcidServiceException("Failed to deserialize person", new());
 
             return person;
         }
         catch (HttpRequestException e)
         {
-            throw new ORCIDServiceException("Failed to retrieve person", e);
+            throw new OrcidServiceException("Failed to retrieve person", e);
         }
         catch (JsonException e)
         {
-            throw new ORCIDServiceException("Failed to deserialize person", e);
+            throw new OrcidServiceException("Failed to deserialize person", e);
         }
     }
 
@@ -67,7 +66,7 @@ public class PersonRetrievalService
 
             HttpResponseMessage response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                throw new ORCIDServiceException("Failed to retrieve person", new());
+                throw new OrcidServiceException("Failed to retrieve person", new());
             
             string text = await response.Content.ReadAsStringAsync();
             JsonDocument doc = JsonDocument.Parse(text);
@@ -91,11 +90,11 @@ public class PersonRetrievalService
         }
         catch (HttpRequestException e)
         {
-            throw new ORCIDServiceException("Failed to retrieve person", e);
+            throw new OrcidServiceException("Failed to retrieve person", e);
         }
         catch (JsonException e)
         {
-            throw new ORCIDServiceException("Failed to deserialize person", e);
+            throw new OrcidServiceException("Failed to deserialize person", e);
         }
     }
     

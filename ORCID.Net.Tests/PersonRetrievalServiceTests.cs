@@ -257,9 +257,10 @@ public class PersonRetrievalServiceTests
         personResponse.Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes(personJson)));
         _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(req =>
             req.Method == HttpMethod.Get &&
+            req.RequestUri != null &&
             req.RequestUri.ToString() == $"https://pub.sandbox.orcid.org/v3.0/0000-0002-7614-2895/person"),  ItExpr.IsAny<CancellationToken>()).Returns(Task.FromResult(personResponse));
         List<Person> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
-        Assert.Equal(1, people.Count);
+        Assert.Single(people);
         var person = people[0];
         Assert.NotNull(person);
         Assert.Equal("mark", person.FirstName);
@@ -291,7 +292,7 @@ public class PersonRetrievalServiceTests
     {
         _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
 
     }
     
@@ -300,7 +301,7 @@ public class PersonRetrievalServiceTests
     {
         _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
 
     }
     
@@ -317,7 +318,7 @@ public class PersonRetrievalServiceTests
         MemoryStream peopleStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         _response.Content = new StreamContent(peopleStream);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
     }
     
     [Fact]
@@ -325,7 +326,7 @@ public class PersonRetrievalServiceTests
     {
         _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
 
     }
     
@@ -334,7 +335,7 @@ public class PersonRetrievalServiceTests
     {
         _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
 
     }
     
@@ -398,7 +399,7 @@ public class PersonRetrievalServiceTests
         MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         _response.Content = new StreamContent(personStream);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<ORCIDServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
     }
     
 }

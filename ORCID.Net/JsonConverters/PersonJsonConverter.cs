@@ -37,6 +37,6 @@ public class PersonJsonConverter : JsonConverter<Person>
 
     public override void Write(Utf8JsonWriter writer, Person value, JsonSerializerOptions options)
     {
-        throw new ORCIDServiceException("Serialization not implemented.");
+        throw new OrcidServiceException("Serialization not implemented.");
     }
 }
