@@ -7,15 +7,15 @@ using ORCID.Net.ORCIDServiceExceptions;
 namespace ORCID.Net.Services;
 
 
-public class PersonRetrievalService
+public class PersonRetrievalService : IPersonRetrievalService
 {
-    public HttpClient _httpClient;
-    public PersonRetrievalServiceOptions _options;
+    public HttpClient HttpClient;
+    public PersonRetrievalServiceOptions Options;
 
     public PersonRetrievalService(PersonRetrievalServiceOptions options)
     {
-        _options = options;
-        _httpClient = _options.BuildHttpClient();
+        Options = options;
+        HttpClient = Options.BuildHttpClient();
     }
 
 
@@ -25,10 +25,10 @@ public class PersonRetrievalService
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"{orcId}/person");
 
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AuthorizationCode);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(_options.MediaHeader));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Options.AuthorizationCode);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(Options.MediaHeader));
             
-            var response = await _httpClient.SendAsync(request);
+            var response = await HttpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
 
@@ -61,10 +61,10 @@ public class PersonRetrievalService
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"search?q={nameQuery}");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.AuthorizationCode);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(_options.MediaHeader));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Options.AuthorizationCode);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(Options.MediaHeader));
             
-            var response = await _httpClient.SendAsync(request);
+            var response = await HttpClient.SendAsync(request);
             if (response.IsSuccessStatusCode)
             {
                 var text = await response.Content.ReadAsStringAsync();
@@ -73,7 +73,7 @@ public class PersonRetrievalService
                 var resultListJson = doc.RootElement.GetProperty("result").EnumerateArray().ToArray();
                 List<PersonSearchResult> resultList = resultListJson.Select(element => JsonSerializer.Deserialize<PersonSearchResult>(element.GetRawText())).ToList();
                 List<Person> returnList = new List<Person>();
-                for (int i = 0; i < Math.Min(resultList.Count, Math.Min(preferredAmountOfResults, _options.MaxResults)); i++)
+                for (int i = 0; i < Math.Min(resultList.Count, Math.Min(preferredAmountOfResults, Options.MaxResults)); i++)
                 {
                     returnList.Add(await FindPersonByOrcid(resultList[i].Id.Path));
                 }

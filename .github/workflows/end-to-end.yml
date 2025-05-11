@@ -63,7 +63,7 @@ jobs:
                     /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
                     /d:sonar.host.url="https://sonarcloud.io"
                     /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
-                    /d:sonar.coverage.exclusions="**/Models/**/*"
+                    /d:sonar.coverage.exclusions="**/Models/**/*, **/PersonRetrievalServiceOptions.cs"
             -   name: Build the project
                 shell: bash
                 run: |
