@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Text;
+﻿using System.Text;
 using Moq;
 using Moq.Protected;
 using ORCID.Net.Services;
@@ -982,7 +981,7 @@ public class PersonRetrievalServiceTests
         MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         _response.Content = new StreamContent(personStream);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        Assert.ThrowsAsync<OrcidServiceException>(() => service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "expanded-result"));
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "expanded-result"));
         
     }
     [Fact]
