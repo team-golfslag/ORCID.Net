@@ -7,6 +7,10 @@ namespace ORCID.Net.Services;
 
 public class PersonRetrievalService : IPersonRetrievalService
 {
+    public const string DeserializationErrorMessage = "Failed to deserialize person";
+    public const string RetrievalErrorMessage = "Failed to retrieve person";
+    
+    
     private readonly HttpClient _httpClient;
     private readonly PersonRetrievalServiceOptions _options;
 
@@ -35,28 +39,28 @@ public class PersonRetrievalService : IPersonRetrievalService
 
             HttpResponseMessage response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                throw new OrcidServiceException("Failed to retrieve person", new());
+                throw new OrcidServiceException(RetrievalErrorMessage,new());
 
             Person? person = await JsonSerializer.DeserializeAsync<Person>(
                 await response.Content.ReadAsStreamAsync(),
                 _jsonSerializerOptions);
 
             if (person == null)
-                throw new OrcidServiceException("Failed to deserialize person", new());
+                throw new OrcidServiceException(DeserializationErrorMessage, new());
 
             return person;
         }
         catch (HttpRequestException e)
         {
-            throw new OrcidServiceException("Failed to retrieve person", e);
+            throw new OrcidServiceException(RetrievalErrorMessage, e);
         }
         catch (JsonException e)
         {
-            throw new OrcidServiceException("Failed to deserialize person", e);
+            throw new OrcidServiceException(DeserializationErrorMessage, e);
         }
     }
 
-    public async Task<List<Person>> FindPeopleByName(string nameQuery, int preferredAmountOfResults)
+    public async Task<List<Person>> FindPeopleByName(string personName, int preferredAmountOfResults)
     {
         try
         {
@@ -72,11 +76,11 @@ public class PersonRetrievalService : IPersonRetrievalService
         }
         catch (HttpRequestException e)
         {
-            throw new OrcidServiceException("Failed to retrieve person", e);
+            throw new OrcidServiceException(RetrievalErrorMessage, e);
         }
         catch (JsonException e)
         {
-            throw new OrcidServiceException("Failed to deserialize person", e);
+            throw new OrcidServiceException(DeserializationErrorMessage, e);
         }
     }
 
@@ -84,14 +88,17 @@ public class PersonRetrievalService : IPersonRetrievalService
     //WARNING: This method is only compatible with the ORCID API v3.0 but this restriction is not enforced
     //use the FindPeopleByName method for a more generic solution. You can expect an exception if you call this method
     //with the wrong configuration.
-    public async Task<List<Person>> FindPeopleByNameFast(string nameQuery)
+    public async Task<List<Person>> FindPeopleByNameFast(string personName)
     {
-        string queryUrl = $"expanded-search?q={nameQuery}";
+        string queryUrl = $"expanded-search?q={personName}";
         var resultList = await SearchResultRequestAndParse<PersonExpandedSearchResult>(queryUrl, "expanded-result");
         return resultList.Select(people => people.ToPerson()).ToList();
     }
 
-    public async Task<List<T>> SearchResultRequestAndParse<T>(string queryUrl, string jsonListElement)
+    
+    
+    
+    public async Task<List<T>> SearchResultRequestAndParse<T>(string queryUrl, string jsonListElement) where T : class
     {
         try
         {
@@ -118,11 +125,11 @@ public class PersonRetrievalService : IPersonRetrievalService
         }
         catch (HttpRequestException e)
         {
-            throw new OrcidServiceException("Failed to retrieve person", e);
+            throw new OrcidServiceException(RetrievalErrorMessage, e);
         }
         catch (JsonException e)
         {
-            throw new OrcidServiceException("Failed to deserialize person", e);
+            throw new OrcidServiceException(DeserializationErrorMessage, e);
         }
     }
 }
