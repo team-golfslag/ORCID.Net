@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 using Moq;
 using Moq.Protected;
 using ORCID.Net.Services;
@@ -708,5 +709,288 @@ public class PersonRetrievalServiceTests
         Assert.Equal("marshall", person.LastName);
         Assert.Null(person.Biography);
         Assert.Null(person.CreditName);
+    }
+    
+    [Fact]
+    public async Task SearchRequestAndParseGoodCase()
+    {
+        _response.StatusCode = System.Net.HttpStatusCode.OK;
+        string json = @"
+        {
+          ""expanded-result"" : [ {
+            ""orcid-id"" : ""0000-0002-0380-1984"",
+            ""given-names"" : ""brenda"",
+            ""family-names"" : ""marshall"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0003-1890-8271"",
+            ""given-names"" : ""Brenda Heaton, MPH"",
+            ""family-names"" : ""Heaton"",
+            ""credit-name"" : ""Brenda Heaton, MPH"",
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-4286-1306"",
+            ""given-names"" : ""Brenda J. Waning, MPH"",
+            ""family-names"" : ""Waning"",
+            ""credit-name"" : ""Brenda J. Waning, MPH"",
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0003-1779-572X"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Waning"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ""bwaning@bu.edu"" ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0003-3316-8742"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Waning"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ""bwaning456@bu.edu"" ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0001-6993-4838"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Waning"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ""bwaning496@bu.edu"" ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0009-0002-4725-1512"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Medeiros"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ""Universidade Federal de São Carlos"" ]
+          }, {
+            ""orcid-id"" : ""0000-0001-9154-5636"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Deely"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ""bdeely@bepress.com"" ],
+            ""institution-name"" : [ ""Bepress (United States)"" ]
+          }, {
+            ""orcid-id"" : ""0000-0001-7424-8357"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Heaton"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ""brenda9456@bu.edu"" ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-1597-6677"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Heaton"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ""brenda9@bu.edu"" ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0001-8800-6551"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Heaton"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ""brenda9496@bu.edu"" ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0003-1927-387X"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Schlagenhauf"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-9071-7691"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Dean"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-7807-7898"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Dean"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-1826-0949"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Dean"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0003-2755-4129"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Linares"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-1034-6860"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Barrie"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0001-5985-448X"",
+            ""given-names"" : ""brenda"",
+            ""family-names"" : ""jones"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0001-6034-3038"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Njoko"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0009-0005-2448-5991"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Tandayu"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0009-0007-8875-055X"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Young"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0009-0009-3210-3753"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Carter"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0009-0006-3132-4704"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Lemons"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0001-6087-6037"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Cross"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0003-0357-0415"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Griffith-Williams"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-8612-6266"",
+            ""given-names"" : ""BRENDA"",
+            ""family-names"" : ""BUITRAGO"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ]
+          }, {
+            ""orcid-id"" : ""0000-0002-4528-628X"",
+            ""given-names"" : ""BRENDA"",
+            ""family-names"" : ""ROMERO"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ""University of Colorado Boulder"" ]
+          }, {
+            ""orcid-id"" : ""0000-0001-9442-8996"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Heaton"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ""Boston University Goldman School of Dental Medicine"" ]
+          }, {
+            ""orcid-id"" : ""0000-0001-5427-9893"",
+            ""given-names"" : ""BRENDA"",
+            ""family-names"" : ""ROMERO"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ""University of Colorado Boulder"" ]
+          }, {
+            ""orcid-id"" : ""0000-0003-1631-1746"",
+            ""given-names"" : ""Brenda"",
+            ""family-names"" : ""Waning"",
+            ""credit-name"" : null,
+            ""other-name"" : [ ],
+            ""email"" : [ ],
+            ""institution-name"" : [ ""Boston University School of Medicine"" ]
+          } ],
+          ""num-found"" : 30
+        }
+        ";
+        
+        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+        _response.Content = new StreamContent(personStream);
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        List<PersonExpandedSearchResult> people = await service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "expanded-result");
+        Assert.Equal(30, people.Count);
+        var person = people[0];
+        Assert.NotNull(person);
+        Assert.Equal("brenda", person.FirstName);
+        Assert.Equal("marshall", person.LastName);
+        Assert.Null(person.CreditName);
+    }
+    [Fact]
+    public async Task SearchRequestAndParseJsonException()
+    {
+        _response.StatusCode = System.Net.HttpStatusCode.OK;
+        string json = "klsdfjlsdfj";
+        
+        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+        _response.Content = new StreamContent(personStream);
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        Assert.ThrowsAsync<OrcidServiceException>(() => service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "expanded-result"));
+        
+    }
+    [Fact]
+    public async Task SearchRequestAndParseHttpException()
+    {
+        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
+        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
+        await Assert.ThrowsAsync<OrcidServiceException>(() => service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "sldfjlsdkj"));
+
     }
 }
