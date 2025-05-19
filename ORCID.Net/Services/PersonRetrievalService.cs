@@ -9,8 +9,8 @@ public class PersonRetrievalService : IPersonRetrievalService
 {
     public const string DeserializationErrorMessage = "Failed to deserialize person";
     public const string RetrievalErrorMessage = "Failed to retrieve person";
-    
-    
+
+
     private readonly HttpClient _httpClient;
     private readonly PersonRetrievalServiceOptions _options;
 
@@ -39,7 +39,7 @@ public class PersonRetrievalService : IPersonRetrievalService
 
             HttpResponseMessage response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                throw new OrcidServiceException(RetrievalErrorMessage,new());
+                throw new OrcidServiceException(RetrievalErrorMessage, new());
 
             Person? person = await JsonSerializer.DeserializeAsync<Person>(
                 await response.Content.ReadAsStreamAsync(),
@@ -62,26 +62,15 @@ public class PersonRetrievalService : IPersonRetrievalService
 
     public async Task<List<Person>> FindPeopleByName(string personName, int preferredAmountOfResults)
     {
-        try
-        {
-            string queryUrl = "search?q={nameQuery}";
-            var resultList = await SearchResultRequestAndParse<PersonSearchResult>(queryUrl, "result");
-            List<Person> returnList = [];
-            for (int i = 0;
-                i < Math.Min(resultList.Count, Math.Min(preferredAmountOfResults, _options.MaxResults));
-                i++)
-                returnList.Add(await FindPersonByOrcid(resultList[i].Id.Path!));
+        string queryUrl = "search?q={nameQuery}";
+        var resultList = await SearchResultRequestAndParse<PersonSearchResult>(queryUrl, "result");
+        List<Person> returnList = [];
+        for (int i = 0;
+            i < Math.Min(resultList.Count, Math.Min(preferredAmountOfResults, _options.MaxResults));
+            i++)
+            returnList.Add(await FindPersonByOrcid(resultList[i].Id.Path!));
 
-            return returnList;
-        }
-        catch (HttpRequestException e)
-        {
-            throw new OrcidServiceException(RetrievalErrorMessage, e);
-        }
-        catch (JsonException e)
-        {
-            throw new OrcidServiceException(DeserializationErrorMessage, e);
-        }
+        return returnList;
     }
 
 
@@ -95,9 +84,7 @@ public class PersonRetrievalService : IPersonRetrievalService
         return resultList.Select(people => people.ToPerson()).ToList();
     }
 
-    
-    
-    
+
     public async Task<List<T>> SearchResultRequestAndParse<T>(string queryUrl, string jsonListElement) where T : class
     {
         try
