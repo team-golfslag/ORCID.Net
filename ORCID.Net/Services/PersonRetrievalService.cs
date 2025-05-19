@@ -138,4 +138,39 @@ public class PersonRetrievalService :IPersonRetrievalService
             throw new OrcidServiceException("Failed to deserialize person", e);
         }
     }
+
+    public async Task<List<T>> SearchResultRequestAndParse<T>(string url, string query, string jsonListElement)
+    {
+        try
+        {
+            HttpRequestMessage request = new(HttpMethod.Get, url + query);
+            request.Headers.Authorization = new("Bearer", _options.AuthorizationCode);
+            request.Headers.Accept.Add(new(_options.MediaHeader));
+
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                throw new OrcidServiceException("Failed to retrieve person", new());
+
+            string text = await response.Content.ReadAsStringAsync();
+            JsonDocument doc = JsonDocument.Parse(text);
+
+            if (doc.RootElement.GetProperty(jsonListElement).ValueKind == JsonValueKind.Null)
+                return [];
+            var resultListJson = doc.RootElement.GetProperty(jsonListElement).EnumerateArray().ToArray();
+
+            List<T> resultList = resultListJson
+                .Select(element => JsonSerializer.Deserialize<T>(element.GetRawText()))
+                .Where(result => result != null)
+                .ToList()!;
+            return resultList; 
+        }
+        catch (HttpRequestException e)
+        {
+            throw new OrcidServiceException("Failed to retrieve person", e);
+        }
+        catch (JsonException e)
+        {
+            throw new OrcidServiceException("Failed to deserialize person", e);
+        }
+    }
 }
