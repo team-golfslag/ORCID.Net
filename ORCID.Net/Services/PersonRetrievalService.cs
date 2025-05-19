@@ -5,7 +5,7 @@ using ORCID.Net.ORCIDServiceExceptions;
 
 namespace ORCID.Net.Services;
 
-public class PersonRetrievalService :IPersonRetrievalService
+public class PersonRetrievalService : IPersonRetrievalService
 {
     private readonly HttpClient _httpClient;
     private readonly PersonRetrievalServiceOptions _options;
@@ -40,7 +40,7 @@ public class PersonRetrievalService :IPersonRetrievalService
             Person? person = await JsonSerializer.DeserializeAsync<Person>(
                 await response.Content.ReadAsStreamAsync(),
                 _jsonSerializerOptions);
-            
+
             if (person == null)
                 throw new OrcidServiceException("Failed to deserialize person", new());
 
@@ -60,25 +60,8 @@ public class PersonRetrievalService :IPersonRetrievalService
     {
         try
         {
-            HttpRequestMessage request = new(HttpMethod.Get, $"search?q={nameQuery}");
-            request.Headers.Authorization = new("Bearer", _options.AuthorizationCode);
-            request.Headers.Accept.Add(new(_options.MediaHeader));
-
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-                throw new OrcidServiceException("Failed to retrieve person", new());
-            
-            string text = await response.Content.ReadAsStringAsync();
-            JsonDocument doc = JsonDocument.Parse(text);
-            
-            if (doc.RootElement.GetProperty("result").ValueKind == JsonValueKind.Null) 
-                return [];
-            var resultListJson = doc.RootElement.GetProperty("result").EnumerateArray().ToArray();
-            
-            List<PersonSearchResult> resultList = resultListJson
-                .Select(element => JsonSerializer.Deserialize<PersonSearchResult>(element.GetRawText()))
-                .Where(result => result != null)
-                .ToList()!;
+            string queryUrl = "search?q={nameQuery}";
+            var resultList = await SearchResultRequestAndParse<PersonSearchResult>(queryUrl, "result");
             List<Person> returnList = [];
             for (int i = 0;
                 i < Math.Min(resultList.Count, Math.Min(preferredAmountOfResults, _options.MaxResults));
@@ -86,7 +69,6 @@ public class PersonRetrievalService :IPersonRetrievalService
                 returnList.Add(await FindPersonByOrcid(resultList[i].Id.Path!));
 
             return returnList;
-
         }
         catch (HttpRequestException e)
         {
@@ -97,53 +79,23 @@ public class PersonRetrievalService :IPersonRetrievalService
             throw new OrcidServiceException("Failed to deserialize person", e);
         }
     }
-    
-    
+
+
     //WARNING: This method is only compatible with the ORCID API v3.0 but this restriction is not enforced
     //use the FindPeopleByName method for a more generic solution. You can expect an exception if you call this method
     //with the wrong configuration.
     public async Task<List<Person>> FindPeopleByNameFast(string nameQuery)
     {
-        try
-        {
-            HttpRequestMessage request = new(HttpMethod.Get, $"expanded-search?q={nameQuery}");
-            request.Headers.Authorization = new("Bearer", _options.AuthorizationCode);
-            request.Headers.Accept.Add(new(_options.MediaHeader));
-
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-                throw new OrcidServiceException("Failed to retrieve person", new());
-            
-            string text = await response.Content.ReadAsStringAsync();
-            JsonDocument doc = JsonDocument.Parse(text);
-            
-            if (doc.RootElement.GetProperty("expanded-result").ValueKind == JsonValueKind.Null) 
-                return [];
-            var resultListJson = doc.RootElement.GetProperty("expanded-result").EnumerateArray().ToArray();
-            
-            List<PersonExpandedSearchResult> resultList = resultListJson
-                .Select(element => JsonSerializer.Deserialize<PersonExpandedSearchResult>(element.GetRawText()))
-                .Where(result => result != null)
-                .ToList()!;
-        
-            return resultList.Select(people => people.ToPerson()).ToList();
-
-        }
-        catch (HttpRequestException e)
-        {
-            throw new OrcidServiceException("Failed to retrieve person", e);
-        }
-        catch (JsonException e)
-        {
-            throw new OrcidServiceException("Failed to deserialize person", e);
-        }
+        string queryUrl = $"expanded-search?q={nameQuery}";
+        var resultList = await SearchResultRequestAndParse<PersonExpandedSearchResult>(queryUrl, "expanded-result");
+        return resultList.Select(people => people.ToPerson()).ToList();
     }
 
-    public async Task<List<T>> SearchResultRequestAndParse<T>(string url, string query, string jsonListElement)
+    public async Task<List<T>> SearchResultRequestAndParse<T>(string queryUrl, string jsonListElement)
     {
         try
         {
-            HttpRequestMessage request = new(HttpMethod.Get, url + query);
+            HttpRequestMessage request = new(HttpMethod.Get, queryUrl);
             request.Headers.Authorization = new("Bearer", _options.AuthorizationCode);
             request.Headers.Accept.Add(new(_options.MediaHeader));
 
@@ -162,7 +114,7 @@ public class PersonRetrievalService :IPersonRetrievalService
                 .Select(element => JsonSerializer.Deserialize<T>(element.GetRawText()))
                 .Where(result => result != null)
                 .ToList()!;
-            return resultList; 
+            return resultList;
         }
         catch (HttpRequestException e)
         {
