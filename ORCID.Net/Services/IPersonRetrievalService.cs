@@ -9,7 +9,9 @@ namespace ORCID.Net.Services;
 
 public interface IPersonRetrievalService
 {
-    Task<Person> FindPersonByOrcid(string personId);
+    Task<Person> FindPersonByOrcid(string orcId);
     
     Task<List<Person>> FindPeopleByName(string personName, int resultAmount);
+    
+    Task<List<Person>> FindPeopleByNameFast(string personName);
 }
