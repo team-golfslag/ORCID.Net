@@ -8,6 +8,8 @@ public class PersonRetrievalServiceOptions
 {
 
     public const string OrcidSandboxUrl = "https://pub.sandbox.orcid.org/v3.0/";
+    
+    public const string OrcidSandboxUrlPreviousVersion = "https://pub.sandbox.orcid.org/v2.1/";
 
     public const string JsonMediaHeader = "application/vnd.orcid+json";
 

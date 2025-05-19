@@ -5,7 +5,7 @@ using ORCID.Net.ORCIDServiceExceptions;
 
 namespace ORCID.Net.Services;
 
-public class PersonRetrievalService
+public class PersonRetrievalService :IPersonRetrievalService
 {
     private readonly HttpClient _httpClient;
     private readonly PersonRetrievalServiceOptions _options;
@@ -98,5 +98,44 @@ public class PersonRetrievalService
         }
     }
     
+    
+    //WARNING: This method is only compatible with the ORCID API v3.0 but this restriction is not enforced
+    //use the FindPeopleByName method for a more generic solution. You can expect an exception if you call this method
+    //with the wrong configuration.
+    public async Task<List<Person>> FindPeopleByNameFast(string nameQuery)
+    {
+        try
+        {
+            HttpRequestMessage request = new(HttpMethod.Get, $"expanded-search?q={nameQuery}");
+            request.Headers.Authorization = new("Bearer", _options.AuthorizationCode);
+            request.Headers.Accept.Add(new(_options.MediaHeader));
 
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+                throw new OrcidServiceException("Failed to retrieve person", new());
+            
+            string text = await response.Content.ReadAsStringAsync();
+            JsonDocument doc = JsonDocument.Parse(text);
+            
+            if (doc.RootElement.GetProperty("expanded-result").ValueKind == JsonValueKind.Null) 
+                return [];
+            var resultListJson = doc.RootElement.GetProperty("expanded-result").EnumerateArray().ToArray();
+            
+            List<PersonExpandedSearchResult> resultList = resultListJson
+                .Select(element => JsonSerializer.Deserialize<PersonExpandedSearchResult>(element.GetRawText()))
+                .Where(result => result != null)
+                .ToList()!;
+        
+            return resultList.Select(people => people.ToPerson()).ToList();
+
+        }
+        catch (HttpRequestException e)
+        {
+            throw new OrcidServiceException("Failed to retrieve person", e);
+        }
+        catch (JsonException e)
+        {
+            throw new OrcidServiceException("Failed to deserialize person", e);
+        }
+    }
 }

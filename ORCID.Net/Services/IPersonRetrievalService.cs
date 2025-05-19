@@ -12,4 +12,6 @@ public interface IPersonRetrievalService
     Task<Person> FindPersonByOrcid(string personId);
     
     Task<List<Person>> FindPeopleByName(string personName, int resultAmount);
+    
+    Task<List<Person>> FindPeopleByNameFast(string personName);
 }
