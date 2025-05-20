@@ -9,7 +9,7 @@ namespace ORCID.Net.Models;
 
 public class PersonExpandedSearchResult
 {
-    [JsonPropertyName("orcid-identifier")]
+    [JsonPropertyName("orcid-id")]
     public string? Orcid { get; set; }
     [JsonPropertyName("given-names")]
     public string? FirstName { get; set; }
@@ -20,6 +20,6 @@ public class PersonExpandedSearchResult
     
     public OrcidPerson ToPerson()
     {
-        return new OrcidPerson(FirstName, LastName, CreditName, null);
+        return new OrcidPerson(FirstName, LastName, CreditName, null, Orcid);
     }
 }

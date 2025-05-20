@@ -32,7 +32,7 @@ public class PersonJsonConverter : JsonConverter<OrcidPerson>
             : null;
 
 
-        return new(firstName, lastName, creditName, biography);
+        return new(firstName, lastName, creditName, biography, null);
     }
 
     public override void Write(Utf8JsonWriter writer, OrcidPerson value, JsonSerializerOptions options)

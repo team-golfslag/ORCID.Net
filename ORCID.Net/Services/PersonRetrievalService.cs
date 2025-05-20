@@ -62,7 +62,7 @@ public class PersonRetrievalService : IPersonRetrievalService
 
     public async Task<List<OrcidPerson>> FindPeopleByName(string personName, int preferredAmountOfResults)
     {
-        string queryUrl = "search?q={nameQuery}";
+        string queryUrl = "search?q=" + personName;
         var resultList = await SearchResultRequestAndParse<PersonSearchResult>(queryUrl, "result");
         List<OrcidPerson> returnList = [];
         for (int i = 0;

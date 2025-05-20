@@ -1,6 +1,7 @@
 
 
 
+using System.Text;
 using System.Text.Json;
 using ORCID.Net.Models;
 
@@ -14,12 +15,12 @@ public class PersonRetrievalServiceOptions
     
     public const string OrcidSandboxUrlPreviousVersion = "https://pub.sandbox.orcid.org/v2.1/";
     
-    public const string OrcidProductionUrl = "https://api.orcid.org/v3.0/";
+    public const string OrcidProductionUrl = "https://pub.orcid.org/v3.0/";
     
-    public const string OrcidProductionUrlPreviousVersion = "https://api.orcid.org/v2.1/";
+    public const string OrcidProductionUrlPreviousVersion = "https://pub.orcid.org/v2.1/";
     
-    public const string OrcidSandboxAuthUrl = "https://sandbox.orcid.org/oauth/authorize";
-    public const string OrcidProductionAuthUrl = "https://orcid.org/oauth/authorize";
+    public const string OrcidSandboxAuthUrl = "https://sandbox.orcid.org/oauth/token";
+    public const string OrcidProductionAuthUrl = "https://orcid.org/oauth/token";
 
     public const string JsonMediaHeader = "application/vnd.orcid+json";
 
@@ -97,14 +98,18 @@ public class PersonRetrievalServiceOptions
     public async Task InitializeAuthorizationToken()
     {
         HttpClient client = new HttpClient();
-        HttpContent content = new StringContent($"client_id={this.ClientId}&client_secret={this.ClientSecret}&grant_type=client_credentials&scope=/read-public");
-        var request = new HttpRequestMessage(HttpMethod.Post, AuthUrl);
-        request.Content = content;
-        request.Headers.Add("Accept", "application/json");
-        var response = await client.SendAsync(request);
+        var content = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("client_id", this.ClientId),
+            new KeyValuePair<string, string>("client_secret", this.ClientSecret),
+            new KeyValuePair<string, string>("scope", "/read-public"),
+            new KeyValuePair<string, string>("grant_type", "client_credentials")
+        });
+        var response = await client.PostAsync(AuthUrl, content);
         if (response.IsSuccessStatusCode)
         {
             var result = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(result);
             var token = JsonSerializer.Deserialize<AuthResponse>(result);
             if (token != null)
             {
