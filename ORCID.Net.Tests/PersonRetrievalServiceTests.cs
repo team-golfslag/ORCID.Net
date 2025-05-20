@@ -21,7 +21,7 @@ public class PersonRetrievalServiceTests
         _messageHandlerMock = new();
         _client = new(_messageHandlerMock.Object);
         _client.BaseAddress = new (PersonRetrievalServiceOptions.OrcidSandboxUrl);
-        _options.Setup(options => options.BuildHttpClient()).Returns(_client);
+        _options.Setup(options => options.BuildRequestClient()).Returns(_client);
         _response = new();
         _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Returns(Task.FromResult(_response));
     }
@@ -86,13 +86,13 @@ public class PersonRetrievalServiceTests
         MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         _response.Content = new StreamContent(personStream);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        Person person = await service.FindPersonByOrcid("Doesn't matter will return set response anyway");
+        OrcidPerson orcidPerson = await service.FindPersonByOrcid("Doesn't matter will return set response anyway");
         
-        Assert.NotNull(person);
-        Assert.Equal("mark", person.FirstName);
-        Assert.Null(person.LastName);
-        Assert.Null(person.Biography);
-        Assert.Null(person.CreditName);
+        Assert.NotNull(orcidPerson);
+        Assert.Equal("mark", orcidPerson.FirstName);
+        Assert.Null(orcidPerson.LastName);
+        Assert.Null(orcidPerson.Biography);
+        Assert.Null(orcidPerson.CreditName);
     }
     
     [Fact]
@@ -161,13 +161,13 @@ public class PersonRetrievalServiceTests
         MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         _response.Content = new StreamContent(personStream);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        Person person = await service.FindPersonByOrcid("Doesn't matter will return set response anyway");
+        OrcidPerson orcidPerson = await service.FindPersonByOrcid("Doesn't matter will return set response anyway");
         
-        Assert.NotNull(person);
-        Assert.Equal("mark", person.FirstName);
-        Assert.Equal("Jensen", person.LastName);
-        Assert.NotNull(person.Biography);
-        Assert.Equal("MJ", person.CreditName);
+        Assert.NotNull(orcidPerson);
+        Assert.Equal("mark", orcidPerson.FirstName);
+        Assert.Equal("Jensen", orcidPerson.LastName);
+        Assert.NotNull(orcidPerson.Biography);
+        Assert.Equal("MJ", orcidPerson.CreditName);
         
     }
     
@@ -259,7 +259,7 @@ public class PersonRetrievalServiceTests
             req.Method == HttpMethod.Get &&
             req.RequestUri != null &&
             req.RequestUri.ToString() == $"https://pub.sandbox.orcid.org/v3.0/0000-0002-7614-2895/person"),  ItExpr.IsAny<CancellationToken>()).Returns(Task.FromResult(personResponse));
-        List<Person> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
+        List<OrcidPerson> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
         Assert.Single(people);
         var person = people[0];
         Assert.NotNull(person);
@@ -374,7 +374,7 @@ public class PersonRetrievalServiceTests
         MemoryStream peopleStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         _response.Content = new StreamContent(peopleStream);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        List<Person> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
+        List<OrcidPerson> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
         Assert.NotNull(people);
         Assert.Empty(people);
     }
@@ -534,7 +534,7 @@ public class PersonRetrievalServiceTests
     {
         _client = new(_messageHandlerMock.Object);
         _client.BaseAddress = new Uri(PersonRetrievalServiceOptions.OrcidSandboxUrlPreviousVersion);
-        _options.Setup(options => options.BuildHttpClient()).Returns(_client);
+        _options.Setup(options => options.BuildRequestClient()).Returns(_client);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
         await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByNameFast("Doesn't matter will return set response anyway"));
     }
@@ -792,7 +792,7 @@ public class PersonRetrievalServiceTests
         MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
         _response.Content = new StreamContent(personStream);
         PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        List<Person> people = await service.FindPeopleByNameFast("Doesn't matter will return set response anyway");
+        List<OrcidPerson> people = await service.FindPeopleByNameFast("Doesn't matter will return set response anyway");
         Assert.Equal(30, people.Count);
         var person = people[0];
         Assert.NotNull(person);

@@ -1,7 +1,7 @@
 
 namespace ORCID.Net.Models;
 
-public class Person(string? firstName, string? lastName, string? creditName, string? biography)
+public class OrcidPerson(string? firstName, string? lastName, string? creditName, string? biography)
 {
 
     public string? FirstName { get; set; } = firstName;

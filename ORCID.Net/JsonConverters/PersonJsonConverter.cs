@@ -6,9 +6,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Models;
 
-public class PersonJsonConverter : JsonConverter<Person>
+public class PersonJsonConverter : JsonConverter<OrcidPerson>
 {
-    public override Person Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override OrcidPerson Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using JsonDocument jsonDoc = JsonDocument.ParseValue(ref reader);
         JsonElement root = jsonDoc.RootElement;
@@ -35,7 +35,7 @@ public class PersonJsonConverter : JsonConverter<Person>
         return new(firstName, lastName, creditName, biography);
     }
 
-    public override void Write(Utf8JsonWriter writer, Person value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, OrcidPerson value, JsonSerializerOptions options)
     {
         throw new OrcidServiceException("Serialization not implemented.");
     }

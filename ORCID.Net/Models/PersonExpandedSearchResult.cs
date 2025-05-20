@@ -18,8 +18,8 @@ public class PersonExpandedSearchResult
     [JsonPropertyName("credit-name")]
     public string? CreditName { get; set; }
     
-    public Person ToPerson()
+    public OrcidPerson ToPerson()
     {
-        return new Person(FirstName, LastName, CreditName, null);
+        return new OrcidPerson(FirstName, LastName, CreditName, null);
     }
 }

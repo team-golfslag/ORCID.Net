@@ -17,7 +17,7 @@ public class PersonRetrievalService : IPersonRetrievalService
     public PersonRetrievalService(PersonRetrievalServiceOptions options)
     {
         _options = options;
-        _httpClient = _options.BuildHttpClient();
+        _httpClient = _options.BuildRequestClient();
     }
 
     private static JsonSerializerOptions _jsonSerializerOptions = new()
@@ -28,7 +28,7 @@ public class PersonRetrievalService : IPersonRetrievalService
         }
     };
 
-    public async Task<Person> FindPersonByOrcid(string orcId)
+    public async Task<OrcidPerson> FindPersonByOrcid(string orcId)
     {
         try
         {
@@ -41,7 +41,7 @@ public class PersonRetrievalService : IPersonRetrievalService
             if (!response.IsSuccessStatusCode)
                 throw new OrcidServiceException(RetrievalErrorMessage, new());
 
-            Person? person = await JsonSerializer.DeserializeAsync<Person>(
+            OrcidPerson? person = await JsonSerializer.DeserializeAsync<OrcidPerson>(
                 await response.Content.ReadAsStreamAsync(),
                 _jsonSerializerOptions);
 
@@ -60,11 +60,11 @@ public class PersonRetrievalService : IPersonRetrievalService
         }
     }
 
-    public async Task<List<Person>> FindPeopleByName(string personName, int preferredAmountOfResults)
+    public async Task<List<OrcidPerson>> FindPeopleByName(string personName, int preferredAmountOfResults)
     {
         string queryUrl = "search?q={nameQuery}";
         var resultList = await SearchResultRequestAndParse<PersonSearchResult>(queryUrl, "result");
-        List<Person> returnList = [];
+        List<OrcidPerson> returnList = [];
         for (int i = 0;
             i < Math.Min(resultList.Count, Math.Min(preferredAmountOfResults, _options.MaxResults));
             i++)
@@ -77,7 +77,7 @@ public class PersonRetrievalService : IPersonRetrievalService
     //WARNING: This method is only compatible with the ORCID API v3.0 but this restriction is not enforced
     //use the FindPeopleByName method for a more generic solution. You can expect an exception if you call this method
     //with the wrong configuration.
-    public async Task<List<Person>> FindPeopleByNameFast(string personName)
+    public async Task<List<OrcidPerson>> FindPeopleByNameFast(string personName)
     {
         string queryUrl = $"expanded-search?q={personName}";
         var resultList = await SearchResultRequestAndParse<PersonExpandedSearchResult>(queryUrl, "expanded-result");
