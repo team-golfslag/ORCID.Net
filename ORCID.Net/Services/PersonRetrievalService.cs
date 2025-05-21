@@ -16,8 +16,6 @@ namespace ORCID.Net.Services;
 /// </summary>
 public class PersonRetrievalService : IPersonRetrievalService
 {
-    private static MediaTypeWithQualityHeaderValue MediaHeader = new("application/vnd.orcid+json");
-
     /// <summary>
     /// Error message for deserialization failures.
     /// </summary>
@@ -28,6 +26,8 @@ public class PersonRetrievalService : IPersonRetrievalService
     /// </summary>
     public const string RetrievalErrorMessage = "Failed to retrieve person";
 
+    private static readonly MediaTypeWithQualityHeaderValue MediaHeader = new("application/vnd.orcid+json");
+
     private static readonly JsonSerializerOptions JsonSerializerOptions = new()
     {
         Converters =
@@ -36,32 +36,33 @@ public class PersonRetrievalService : IPersonRetrievalService
         },
     };
 
-    private readonly HttpClient _httpClient;
-    private readonly PersonRetrievalServiceOptions _options;
     private readonly AuthResponse _authResponse;
 
+    private readonly HttpClient _httpClient;
+    private readonly PersonRetrievalServiceOptions _options;
+
     /// <summary>
-    /// Initializes a new instance of the <see cref="PersonRetrievalService"/> class.
+    /// Initializes a new instance of the <see cref="PersonRetrievalService" /> class.
     /// </summary>
     /// <param name="options">The options for configuring the service.</param>
     public PersonRetrievalService(PersonRetrievalServiceOptions options)
     {
         _options = options;
-        _httpClient = new HttpClient();
+        _httpClient = new();
         _httpClient.BaseAddress = _options.ApiUrl;
-        
+
         _authResponse = GetAuthResponse() ??
             throw new OrcidServiceException("Failed to obtain authorization token", new());
     }
-    
+
     /// <summary>
-    /// Initializes a new instance of the <see cref="PersonRetrievalService"/> class with specific clients for testing.
+    /// Initializes a new instance of the <see cref="PersonRetrievalService" /> class with specific clients for testing.
     /// </summary>
     /// <param name="options">The options for configuring the service.</param>
     /// <param name="httpClient">HTTP client to use for API requests.</param>
     /// <param name="authResponse">Authentication response to use instead of performing authentication.</param>
     internal PersonRetrievalService(
-        PersonRetrievalServiceOptions options, 
+        PersonRetrievalServiceOptions options,
         HttpClient httpClient,
         AuthResponse authResponse)
     {
@@ -71,42 +72,11 @@ public class PersonRetrievalService : IPersonRetrievalService
         _authResponse = authResponse;
     }
 
-    private AuthResponse? GetAuthResponse(HttpClient? httpClient = null)
-    {
-        if (string.IsNullOrEmpty(_options.ClientId) || string.IsNullOrEmpty(_options.ClientSecret))
-            throw new InvalidOperationException(
-                "Client ID and Client Secret must be provided to initialize the authorization token.");
-
-        // Use provided client or create a new one
-        var client = httpClient ?? new HttpClient();
-        
-        FormUrlEncodedContent content = new([
-            new("client_id", _options.ClientId),
-            new("client_secret", _options.ClientSecret),
-            new("scope", "/read-public"),
-            new("grant_type", "client_credentials"),
-        ]);
-
-        var authUrl = new Uri(_options.BaseUrl, "oauth/token");
-        HttpResponseMessage response = client.PostAsync(authUrl, content)
-            .GetAwaiter()
-            .GetResult();
-        if (response.IsSuccessStatusCode)
-        {
-            string result = response.Content.ReadAsStringAsync()
-                .GetAwaiter()
-                .GetResult();
-            return JsonSerializer.Deserialize<AuthResponse>(result);
-        }
-
-        throw new HttpRequestException($"Failed to obtain authorization token. Status code: {response.StatusCode}");
-    }
-
     /// <summary>
     /// Finds a person by their ORCID ID.
     /// </summary>
     /// <param name="orcId">The ORCID ID of the person to find.</param>
-    /// <returns>An <see cref="OrcidPerson"/> object representing the person.</returns>
+    /// <returns>An <see cref="OrcidPerson" /> object representing the person.</returns>
     /// <exception cref="OrcidServiceException">Thrown when an error occurs during retrieval or deserialization.</exception>
     public async Task<OrcidPerson> FindPersonByOrcid(string orcId)
     {
@@ -145,7 +115,7 @@ public class PersonRetrievalService : IPersonRetrievalService
     /// </summary>
     /// <param name="personName">The name of the person to search for.</param>
     /// <param name="preferredAmountOfResults">The preferred number of results to return.</param>
-    /// <returns>A list of <see cref="OrcidPerson"/> objects matching the search criteria.</returns>
+    /// <returns>A list of <see cref="OrcidPerson" /> objects matching the search criteria.</returns>
     /// <exception cref="OrcidServiceException">Thrown when an error occurs during retrieval or deserialization.</exception>
     public async Task<List<OrcidPerson>> FindPeopleByName(string personName, int preferredAmountOfResults)
     {
@@ -165,11 +135,12 @@ public class PersonRetrievalService : IPersonRetrievalService
     /// </summary>
     /// <remarks>
     /// WARNING: This method is only compatible with the ORCID API v3.0 but this restriction is not enforced.
-    /// Use the <see cref="FindPeopleByName"/> method for a more generic solution. You can expect an exception if you call this method
+    /// Use the <see cref="FindPeopleByName" /> method for a more generic solution. You can expect an exception if you call
+    /// this method
     /// with the wrong configuration.
     /// </remarks>
     /// <param name="personName">The name of the person to search for.</param>
-    /// <returns>A list of <see cref="OrcidPerson"/> objects matching the search criteria.</returns>
+    /// <returns>A list of <see cref="OrcidPerson" /> objects matching the search criteria.</returns>
     /// <exception cref="OrcidServiceException">Thrown when an error occurs during retrieval or deserialization.</exception>
     public async Task<List<OrcidPerson>> FindPeopleByNameFast(string personName)
     {
@@ -178,13 +149,44 @@ public class PersonRetrievalService : IPersonRetrievalService
         return resultList.Select(people => people.ToPerson()).ToList();
     }
 
+    private AuthResponse? GetAuthResponse(HttpClient? httpClient = null)
+    {
+        if (string.IsNullOrEmpty(_options.ClientId) || string.IsNullOrEmpty(_options.ClientSecret))
+            throw new InvalidOperationException(
+                "Client ID and Client Secret must be provided to initialize the authorization token.");
+
+        // Use provided client or create a new one
+        HttpClient client = httpClient ?? new HttpClient();
+
+        FormUrlEncodedContent content = new([
+            new("client_id", _options.ClientId),
+            new("client_secret", _options.ClientSecret),
+            new("scope", "/read-public"),
+            new("grant_type", "client_credentials"),
+        ]);
+
+        Uri authUrl = new(_options.BaseUrl, "oauth/token");
+        HttpResponseMessage response = client.PostAsync(authUrl, content)
+            .GetAwaiter()
+            .GetResult();
+        if (response.IsSuccessStatusCode)
+        {
+            string result = response.Content.ReadAsStringAsync()
+                .GetAwaiter()
+                .GetResult();
+            return JsonSerializer.Deserialize<AuthResponse>(result);
+        }
+
+        throw new HttpRequestException($"Failed to obtain authorization token. Status code: {response.StatusCode}");
+    }
+
     /// <summary>
     /// Performs a search request to the ORCID API and parses the results.
     /// </summary>
     /// <typeparam name="T">The type of the search result items.</typeparam>
     /// <param name="queryUrl">The query URL for the search.</param>
     /// <param name="jsonListElement">The name of the JSON element containing the list of results.</param>
-    /// <returns>A list of search result items of type <typeparamref name="T"/>.</returns>
+    /// <returns>A list of search result items of type <typeparamref name="T" />.</returns>
     /// <exception cref="OrcidServiceException">Thrown when an error occurs during the request or parsing.</exception>
     public async Task<List<T>> SearchResultRequestAndParse<T>(string queryUrl, string jsonListElement) where T : class
     {
