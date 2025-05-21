@@ -11,15 +11,15 @@ public class PersonExpandedSearchResult
 {
     [JsonPropertyName("orcid-id")]
     public string? Orcid { get; set; }
+
     [JsonPropertyName("given-names")]
     public string? FirstName { get; set; }
+
     [JsonPropertyName("family-names")]
     public string? LastName { get; set; }
+
     [JsonPropertyName("credit-name")]
     public string? CreditName { get; set; }
-    
-    public OrcidPerson ToPerson()
-    {
-        return new OrcidPerson(FirstName, LastName, CreditName, null, Orcid);
-    }
+
+    public OrcidPerson ToPerson() => new(FirstName, LastName, CreditName, null, Orcid);
 }

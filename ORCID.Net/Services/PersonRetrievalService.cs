@@ -1,6 +1,11 @@
+// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
 using System.Text.Json;
-using ORCID.Net.Models;
 using ORCID.Net.JsonConverters;
+using ORCID.Net.Models;
 using ORCID.Net.ORCIDServiceExceptions;
 
 namespace ORCID.Net.Services;
@@ -10,6 +15,13 @@ public class PersonRetrievalService : IPersonRetrievalService
     public const string DeserializationErrorMessage = "Failed to deserialize person";
     public const string RetrievalErrorMessage = "Failed to retrieve person";
 
+    private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
+    {
+        Converters =
+        {
+            new PersonJsonConverter(),
+        },
+    };
 
     private readonly HttpClient _httpClient;
     private readonly PersonRetrievalServiceOptions _options;
@@ -20,19 +32,11 @@ public class PersonRetrievalService : IPersonRetrievalService
         _httpClient = _options.BuildRequestClient();
     }
 
-    private static JsonSerializerOptions _jsonSerializerOptions = new()
-    {
-        Converters =
-        {
-            new PersonJsonConverter()
-        }
-    };
-
     public async Task<OrcidPerson> FindPersonByOrcid(string orcId)
     {
         try
         {
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"{orcId}/person");
+            HttpRequestMessage request = new(HttpMethod.Get, $"{orcId}/person");
 
             request.Headers.Authorization = new("Bearer", _options.AuthorizationCode);
             request.Headers.Accept.Add(new(_options.MediaHeader));
@@ -73,7 +77,6 @@ public class PersonRetrievalService : IPersonRetrievalService
         return returnList;
     }
 
-
     //WARNING: This method is only compatible with the ORCID API v3.0 but this restriction is not enforced
     //use the FindPeopleByName method for a more generic solution. You can expect an exception if you call this method
     //with the wrong configuration.
@@ -83,7 +86,6 @@ public class PersonRetrievalService : IPersonRetrievalService
         var resultList = await SearchResultRequestAndParse<PersonExpandedSearchResult>(queryUrl, "expanded-result");
         return resultList.Select(people => people.ToPerson()).ToList();
     }
-
 
     public async Task<List<T>> SearchResultRequestAndParse<T>(string queryUrl, string jsonListElement) where T : class
     {
