@@ -15,22 +15,20 @@ namespace ORCID.Net.Tests;
 
 public class PersonRetrievalServiceTests
 {
-    private const string FakeBaseUrl = "https://sandbox.orcid.org";
-    private const string FakeClientId = "fake-client-id";
-    private const string FakeClientSecret = "fake-client-secret";
-    private const string FakeAccessToken = "fake-token-123";
-    private const string FakeApiVersion = "v3.0";
-    private const int TestMaxResults = 20;
     private readonly Mock<HttpMessageHandler> _messageHandlerMock = new();
-
     private readonly PersonRetrievalServiceOptions _options = new(
         FakeBaseUrl,
         FakeClientId,
         FakeClientSecret,
         FakeApiVersion,
         TestMaxResults);
-
     private readonly HttpResponseMessage _response = new();
+    private const string FakeBaseUrl = "https://sandbox.orcid.org";
+    private const string FakeClientId = "fake-client-id";
+    private const string FakeClientSecret = "fake-client-secret";
+    private const string FakeAccessToken = "fake-token-123";
+    private const string FakeApiVersion = "v3.0";
+    private const int TestMaxResults = 20;
 
     private void SetupHttpResponse(HttpStatusCode statusCode, string content)
     {
@@ -51,7 +49,7 @@ public class PersonRetrievalServiceTests
         {
             Token = FakeAccessToken,
             TokenType = "bearer",
-            ExpiresIn = 631138518,
+            ExpiresIn = 631138518
         };
 
         // Use the internal constructor (requires InternalsVisibleTo for the test project)
@@ -63,30 +61,28 @@ public class PersonRetrievalServiceTests
     {
         // Arrange
         const string json = """
-
-                                    {
-                                      "last-modified-date": null,
-                                      "name": {
-                                        "created-date": {
-                                          "value": 1487783344822
-                                        },
-                                        "last-modified-date": {
-                                          "value": 1487783345135
-                                        },
-                                        "given-names": {
-                                          "value": "mark"
-                                        },
-                                        "family-name": null,
-                                        "credit-name": null,
-                                        "source": null,
-                                        "visibility": "PUBLIC",
-                                        "path": "0000-0001-8564-3504"
-                                      },
-                                      "biography": null,
-                                      "path": "/0000-0001-8564-3504/person"
-                                    }
-                                    
-                            """;
+        {
+          "last-modified-date": null,
+          "name": {
+            "created-date": {
+              "value": 1487783344822
+            },
+            "last-modified-date": {
+              "value": 1487783345135
+            },
+            "given-names": {
+              "value": "mark"
+            },
+            "family-name": null,
+            "credit-name": null,
+            "source": null,
+            "visibility": "PUBLIC",
+            "path": "0000-0001-8564-3504"
+          },
+          "biography": null,
+          "path": "/0000-0001-8564-3504/person"
+        }
+        """;
         SetupHttpResponse(HttpStatusCode.OK, json);
 
         // Act
@@ -107,36 +103,34 @@ public class PersonRetrievalServiceTests
     {
         // Arrange
         const string json = """
-
-                                    {
-                                      "last-modified-date": null,
-                                      "name": {
-                                        "created-date": {
-                                          "value": 1487783344822
-                                        },
-                                        "last-modified-date": {
-                                          "value": 1487783345135
-                                        },
-                                        "given-names": {
-                                          "value": "mark"
-                                        },
-                                        "family-name": {
-                                          "value": "Jensen"
-                                        },
-                                        "credit-name": {
-                                          "value": "MJ"
-                                        },
-                                        "source": null,
-                                        "visibility": "PUBLIC",
-                                        "path": "0000-0001-8564-3504"
-                                      },
-                                      "biography": {
-                                          "value": "Upstanding citizen by day but at night he transforms into the rizzler"
-                                        },
-                                      "path": "/0000-0001-8564-3504/person"
-                                    }
-                                    
-                            """;
+        {
+          "last-modified-date": null,
+          "name": {
+            "created-date": {
+              "value": 1487783344822
+            },
+            "last-modified-date": {
+              "value": 1487783345135
+            },
+            "given-names": {
+              "value": "mark"
+            },
+            "family-name": {
+              "value": "Jensen"
+            },
+            "credit-name": {
+              "value": "MJ"
+            },
+            "source": null,
+            "visibility": "PUBLIC",
+            "path": "0000-0001-8564-3504"
+          },
+          "biography": {
+              "value": "Upstanding citizen by day but at night he transforms into the rizzler"
+            },
+          "path": "/0000-0001-8564-3504/person"
+        }
+        """;
         SetupHttpResponse(HttpStatusCode.OK, json);
 
         // Act
@@ -158,54 +152,50 @@ public class PersonRetrievalServiceTests
         // Arrange
         // First set up the search result
         const string searchJson = """
-
-                                          {
-                                            "result" : [
-                                              {
-                                                "orcid-identifier" : {
-                                                  "uri" : "https://sandbox.orcid.org/0000-0002-7614-2895",
-                                                  "path" : "0000-0002-7614-2895",
-                                                  "host" : "sandbox.orcid.org"
-                                                }
-                                              }
-                                            ],
-                                            "num-found": 1
-                                          }
-                                          
-                                  """;
+        {
+          "result" : [
+            {
+              "orcid-identifier" : {
+                "uri" : "https://sandbox.orcid.org/0000-0002-7614-2895",
+                "path" : "0000-0002-7614-2895",
+                "host" : "sandbox.orcid.org"
+              }
+            }
+          ],
+          "num-found": 1
+        }
+        """;
 
         // Setup the person detail that will be returned when fetching by ID
         const string personJson = """
-
-                                          {
-                                            "last-modified-date": null,
-                                            "name": {
-                                              "created-date": {
-                                                "value": 1487783344822
-                                              },
-                                              "last-modified-date": {
-                                                "value": 1487783345135
-                                              },
-                                              "given-names": {
-                                                "value": "mark"
-                                              },
-                                              "family-name": {
-                                                "value": "Jensen"
-                                              },
-                                              "credit-name": {
-                                                "value": "MJ"
-                                              },
-                                              "source": null,
-                                              "visibility": "PUBLIC",
-                                              "path": "0000-0002-7614-2895"
-                                            },
-                                            "biography": {
-                                                "value": "Upstanding citizen by day but at night he transforms into the rizzler"
-                                              },
-                                            "path": "/0000-0002-7614-2895/person"
-                                          }
-                                          
-                                  """;
+        {
+          "last-modified-date": null,
+          "name": {
+            "created-date": {
+              "value": 1487783344822
+            },
+            "last-modified-date": {
+              "value": 1487783345135
+            },
+            "given-names": {
+              "value": "mark"
+            },
+            "family-name": {
+              "value": "Jensen"
+            },
+            "credit-name": {
+              "value": "MJ"
+            },
+            "source": null,
+            "visibility": "PUBLIC",
+            "path": "0000-0002-7614-2895"
+          },
+          "biography": {
+              "value": "Upstanding citizen by day but at night he transforms into the rizzler"
+            },
+          "path": "/0000-0002-7614-2895/person"
+        }
+        """;
 
         // Setup the search response
         _messageHandlerMock.Protected()
@@ -216,7 +206,7 @@ public class PersonRetrievalServiceTests
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(searchJson),
+                Content = new StringContent(searchJson)
             });
 
         // Setup the person detail response
@@ -228,7 +218,7 @@ public class PersonRetrievalServiceTests
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(personJson),
+                Content = new StringContent(personJson)
             });
 
         // Act
@@ -252,21 +242,19 @@ public class PersonRetrievalServiceTests
         // Arrange
         // First set up the search result
         const string searchJson = """
-
-                                          {
-                                            "result" : [
-                                              {
-                                                "orcid-identifier" : {
-                                                  "uri" : "https://sandbox.orcid.org/0000-0002-7614-2895",
-                                                  "path" : "0000-0002-7614-2895",
-                                                  "host" : "sandbox.orcid.org"
-                                                }
-                                              }
-                                            ],
-                                            "num-found": 1
-                                          }
-                                          
-                                  """;
+        {
+          "result" : [
+            {
+              "orcid-identifier" : {
+                "uri" : "https://sandbox.orcid.org/0000-0002-7614-2895",
+                "path" : "0000-0002-7614-2895",
+                "host" : "sandbox.orcid.org"
+              }
+            }
+          ],
+          "num-found": 1
+        }
+        """;
 
         // Setup the person detail that will be returned when fetching by ID, with invalid JSON
         const string invalidPersonJson = "{{{{ Invalid JSON here";
@@ -280,7 +268,7 @@ public class PersonRetrievalServiceTests
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(searchJson),
+                Content = new StringContent(searchJson)
             });
 
         // Setup the person detail response with invalid JSON
@@ -292,7 +280,7 @@ public class PersonRetrievalServiceTests
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(invalidPersonJson),
+                Content = new StringContent(invalidPersonJson)
             });
 
         // Act & Assert
@@ -306,13 +294,11 @@ public class PersonRetrievalServiceTests
     {
         // Arrange
         const string json = """
-
-                                    {
-                                      "result" : [],
-                                      "num-found": 0
-                                    }
-                                    
-                            """;
+        {
+          "result" : [],
+          "num-found": 0
+        }
+        """;
         SetupHttpResponse(HttpStatusCode.OK, json);
 
         // Act
@@ -452,29 +438,27 @@ public class PersonRetrievalServiceTests
     {
         // Arrange
         const string json = """
-
-                                    {
-                                      "expanded-result" : [ {
-                                        "orcid-id" : "0000-0002-0380-1984",
-                                        "given-names" : "brenda",
-                                        "family-names" : "marshall",
-                                        "credit-name" : null,
-                                        "other-name" : [ ],
-                                        "email" : [ ],
-                                        "institution-name" : [ ]
-                                      }, {
-                                        "orcid-id" : "0000-0003-1890-8271",
-                                        "given-names" : "Brenda Heaton, MPH",
-                                        "family-names" : "Heaton",
-                                        "credit-name" : "Brenda Heaton, MPH",
-                                        "other-name" : [ ],
-                                        "email" : [ ],
-                                        "institution-name" : [ ]
-                                      }],
-                                      "num-found" : 2
-                                    }
-                                    
-                            """;
+        {
+          "expanded-result" : [ {
+            "orcid-id" : "0000-0002-0380-1984",
+            "given-names" : "brenda",
+            "family-names" : "marshall",
+            "credit-name" : null,
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
+          }, {
+            "orcid-id" : "0000-0003-1890-8271",
+            "given-names" : "Brenda Heaton, MPH",
+            "family-names" : "Heaton",
+            "credit-name" : "Brenda Heaton, MPH",
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
+          }],
+          "num-found" : 2
+        }
+        """;
         SetupHttpResponse(HttpStatusCode.OK, json);
 
         // Act
@@ -498,29 +482,27 @@ public class PersonRetrievalServiceTests
     {
         // Arrange
         const string json = """
-
-                                    {
-                                      "expanded-result" : [ {
-                                        "orcid-id" : "0000-0002-0380-1984",
-                                        "given-names" : "brenda",
-                                        "family-names" : "marshall",
-                                        "credit-name" : null,
-                                        "other-name" : [ ],
-                                        "email" : [ ],
-                                        "institution-name" : [ ]
-                                      }, {
-                                        "orcid-id" : "0000-0003-1890-8271",
-                                        "given-names" : "Brenda Heaton, MPH",
-                                        "family-names" : "Heaton",
-                                        "credit-name" : "Brenda Heaton, MPH",
-                                        "other-name" : [ ],
-                                        "email" : [ ],
-                                        "institution-name" : [ ]
-                                      }],
-                                      "num-found" : 2
-                                    }
-                                    
-                            """;
+        {
+          "expanded-result" : [ {
+            "orcid-id" : "0000-0002-0380-1984",
+            "given-names" : "brenda",
+            "family-names" : "marshall",
+            "credit-name" : null,
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
+          }, {
+            "orcid-id" : "0000-0003-1890-8271",
+            "given-names" : "Brenda Heaton, MPH",
+            "family-names" : "Heaton",
+            "credit-name" : "Brenda Heaton, MPH",
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
+          }],
+          "num-found" : 2
+        }
+        """;
         SetupHttpResponse(HttpStatusCode.OK, json);
 
         // Act
@@ -574,54 +556,52 @@ public class PersonRetrievalServiceTests
         // Create multiple search results
         var searchResults = new List<string>();
         for (int i = 0; i < 30; i++)
+        {
             searchResults.Add($$"""
-                                {
-                                                "orcid-identifier" : {
-                                                    "uri" : "https://sandbox.orcid.org/0000-0002-7614-{{i:D4}}",
-                                                    "path" : "0000-0002-7614-{{i:D4}}",
-                                                    "host" : "sandbox.orcid.org"
-                                                }
-                                            }
-                                """);
+            {
+              "orcid-identifier" : {
+                "uri" : "https://sandbox.orcid.org/0000-0002-7614-{{i:D4}}",
+                "path" : "0000-0002-7614-{{i:D4}}",
+                "host" : "sandbox.orcid.org"
+              }
+            }
+            """);
+        }
 
         string searchJson = $$"""
-
-                                      {
-                                        "result" : [{{string.Join(",", searchResults)}}],
-                                        "num-found": 30
-                                      }
-                                      
-                              """;
+        {
+          "result" : [{{string.Join(",", searchResults)}}],
+          "num-found": 30
+        }
+        """;
 
         // Create a template for each index value
         string CreatePersonJson(int index) =>
             $$"""
-
-                      {
-                        "last-modified-date": null,
-                        "name": {
-                          "created-date": {
-                            "value": 1487783344822
-                          },
-                          "last-modified-date": {
-                            "value": 1487783345135
-                          },
-                          "given-names": {
-                            "value": "Person_{{index}}"
-                          },
-                          "family-name": {
-                            "value": "Last_{{index}}"
-                          },
-                          "credit-name": null,
-                          "source": null,
-                          "visibility": "PUBLIC",
-                          "path": "0000-0002-7614-{{index:D4}}"
-                        },
-                        "biography": null,
-                        "path": "/0000-0002-7614-{{index:D4}}/person"
-                      }
-                      
-              """;
+            {
+              "last-modified-date": null,
+              "name": {
+                "created-date": {
+                  "value": 1487783344822
+                },
+                "last-modified-date": {
+                  "value": 1487783345135
+                },
+                "given-names": {
+                  "value": "Person_{{index}}"
+                },
+                "family-name": {
+                  "value": "Last_{{index}}"
+                },
+                "credit-name": null,
+                "source": null,
+                "visibility": "PUBLIC",
+                "path": "0000-0002-7614-{{index:D4}}"
+              },
+              "biography": null,
+              "path": "/0000-0002-7614-{{index:D4}}/person"
+            }
+            """;
 
         // Setup the search response
         _messageHandlerMock.Protected()
@@ -632,7 +612,7 @@ public class PersonRetrievalServiceTests
                 ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(searchJson),
+                Content = new StringContent(searchJson)
             });
 
         // Setup individual person responses
@@ -649,7 +629,7 @@ public class PersonRetrievalServiceTests
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(personJson),
+                    Content = new StringContent(personJson)
                 });
         }
 
