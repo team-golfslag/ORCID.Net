@@ -1,380 +1,311 @@
-﻿using System.Text;
+﻿// This program has been developed by students from the bachelor Computer Science at Utrecht
+// University within the Software Project course.
+// 
+// © Copyright Utrecht University (Department of Information and Computing Sciences)
+
+using System.Net;
 using Moq;
 using Moq.Protected;
-using ORCID.Net.Services;
 using ORCID.Net.Models;
 using ORCID.Net.ORCIDServiceExceptions;
+using ORCID.Net.Services;
 using Xunit;
 
 namespace ORCID.Net.Tests;
 
 public class PersonRetrievalServiceTests
 {
-    private HttpClient _client;
-    private Mock<HttpMessageHandler> _messageHandlerMock;
-    private HttpResponseMessage _response;
-    private Mock<PersonRetrievalServiceOptions> _options;
+    private readonly Mock<HttpMessageHandler> _messageHandlerMock = new();
+    private readonly PersonRetrievalServiceOptions _options = new(
+        FakeBaseUrl,
+        FakeClientId,
+        FakeClientSecret,
+        FakeApiVersion,
+        TestMaxResults);
+    private readonly HttpResponseMessage _response = new();
+    private const string FakeBaseUrl = "https://sandbox.orcid.org";
+    private const string FakeClientId = "fake-client-id";
+    private const string FakeClientSecret = "fake-client-secret";
+    private const string FakeAccessToken = "fake-token-123";
+    private const string FakeApiVersion = "v3.0";
+    private const int TestMaxResults = 20;
 
-    public PersonRetrievalServiceTests()
+    private void SetupHttpResponse(HttpStatusCode statusCode, string content)
     {
-        _options = new();
-        _messageHandlerMock = new();
-        _client = new(_messageHandlerMock.Object);
-        _client.BaseAddress = new (PersonRetrievalServiceOptions.OrcidSandboxUrl);
-        _options.Setup(options => options.BuildHttpClient()).Returns(_client);
-        _response = new();
-        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Returns(Task.FromResult(_response));
+        _response.StatusCode = statusCode;
+        _response.Content = new StringContent(content);
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.Method == HttpMethod.Get),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(_response);
+    }
+
+    // Helper method to create a test service instance using our mocked HttpClient
+    private PersonRetrievalService CreateTestService()
+    {
+        HttpClient httpClient = new(_messageHandlerMock.Object);
+        AuthResponse authResponse = new()
+        {
+            Token = FakeAccessToken,
+            TokenType = "bearer",
+            ExpiresIn = 631138518
+        };
+
+        // Use the internal constructor (requires InternalsVisibleTo for the test project)
+        return new(_options, httpClient, authResponse);
     }
 
     [Fact]
     public async Task PersonRetrievalTestWithSomeAttributesNull()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
+        // Arrange
+        const string json = """
         {
-          ""last-modified-date"": null,
-          ""name"": {
-            ""created-date"": {
-              ""value"": 1487783344822
+          "last-modified-date": null,
+          "name": {
+            "created-date": {
+              "value": 1487783344822
             },
-            ""last-modified-date"": {
-              ""value"": 1487783345135
+            "last-modified-date": {
+              "value": 1487783345135
             },
-            ""given-names"": {
-              ""value"": ""mark""
+            "given-names": {
+              "value": "mark"
             },
-            ""family-name"": null,
-            ""credit-name"": null,
-            ""source"": null,
-            ""visibility"": ""PUBLIC"",
-            ""path"": ""0000-0001-8564-3504""
+            "family-name": null,
+            "credit-name": null,
+            "source": null,
+            "visibility": "PUBLIC",
+            "path": "0000-0001-8564-3504"
           },
-          ""other-names"": {
-            ""last-modified-date"": null,
-            ""other-name"": [],
-            ""path"": ""/0000-0001-8564-3504/other-names""
-          },
-          ""biography"": null,
-          ""researcher-urls"": {
-            ""last-modified-date"": null,
-            ""researcher-url"": [],
-            ""path"": ""/0000-0001-8564-3504/researcher-urls""
-          },
-          ""emails"": {
-            ""last-modified-date"": null,
-            ""email"": [],
-            ""path"": ""/0000-0001-8564-3504/email""
-          },
-          ""addresses"": {
-            ""last-modified-date"": null,
-            ""address"": [],
-            ""path"": ""/0000-0001-8564-3504/address""
-          },
-          ""keywords"": {
-            ""last-modified-date"": null,
-            ""keyword"": [],
-            ""path"": ""/0000-0001-8564-3504/keywords""
-          },
-          ""external-identifiers"": {
-            ""last-modified-date"": null,
-            ""external-identifier"": [],
-            ""path"": ""/0000-0001-8564-3504/external-identifiers""
-          },
-          ""path"": ""/0000-0001-8564-3504/person""
+          "biography": null,
+          "path": "/0000-0001-8564-3504/person"
         }
-        ";
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        Person person = await service.FindPersonByOrcid("Doesn't matter will return set response anyway");
-        
-        Assert.NotNull(person);
-        Assert.Equal("mark", person.FirstName);
-        Assert.Null(person.LastName);
-        Assert.Null(person.Biography);
-        Assert.Null(person.CreditName);
+        """;
+        SetupHttpResponse(HttpStatusCode.OK, json);
+
+        // Act
+        PersonRetrievalService service = CreateTestService();
+        OrcidPerson orcidPerson = await service.FindPersonByOrcid("0000-0001-8564-3504");
+
+        // Assert
+        Assert.NotNull(orcidPerson);
+        Assert.Equal("mark", orcidPerson.FirstName);
+        Assert.Null(orcidPerson.LastName);
+        Assert.Null(orcidPerson.CreditName);
+        Assert.Null(orcidPerson.Biography);
+        Assert.Equal("0000-0001-8564-3504", orcidPerson.Orcid);
     }
-    
+
     [Fact]
     public async Task PersonRetrievalTestWithNoAttributesNull()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
+        // Arrange
+        const string json = """
         {
-          ""last-modified-date"": null,
-          ""name"": {
-            ""created-date"": {
-              ""value"": 1487783344822
+          "last-modified-date": null,
+          "name": {
+            "created-date": {
+              "value": 1487783344822
             },
-            ""last-modified-date"": {
-              ""value"": 1487783345135
+            "last-modified-date": {
+              "value": 1487783345135
             },
-            ""given-names"": {
-              ""value"": ""mark""
+            "given-names": {
+              "value": "mark"
             },
-            ""family-name"": {
-              ""value"": ""Jensen""
+            "family-name": {
+              "value": "Jensen"
             },
-            ""credit-name"": {
-              ""value"": ""MJ""
+            "credit-name": {
+              "value": "MJ"
             },
-            ""source"": null,
-            ""visibility"": ""PUBLIC"",
-            ""path"": ""0000-0001-8564-3504""
+            "source": null,
+            "visibility": "PUBLIC",
+            "path": "0000-0001-8564-3504"
           },
-          ""other-names"": {
-            ""last-modified-date"": null,
-            ""other-name"": [],
-            ""path"": ""/0000-0001-8564-3504/other-names""
-          },
-          ""biography"": {
-              ""value"": ""Upstanding citizen by day but at night he transforms into the rizzler""
+          "biography": {
+              "value": "Upstanding citizen by day but at night he transforms into the rizzler"
             },
-          ""researcher-urls"": {
-            ""last-modified-date"": null,
-            ""researcher-url"": [],
-            ""path"": ""/0000-0001-8564-3504/researcher-urls""
-          },
-          ""emails"": {
-            ""last-modified-date"": null,
-            ""email"": [],
-            ""path"": ""/0000-0001-8564-3504/email""
-          },
-          ""addresses"": {
-            ""last-modified-date"": null,
-            ""address"": [],
-            ""path"": ""/0000-0001-8564-3504/address""
-          },
-          ""keywords"": {
-            ""last-modified-date"": null,
-            ""keyword"": [],
-            ""path"": ""/0000-0001-8564-3504/keywords""
-          },
-          ""external-identifiers"": {
-            ""last-modified-date"": null,
-            ""external-identifier"": [],
-            ""path"": ""/0000-0001-8564-3504/external-identifiers""
-          },
-          ""path"": ""/0000-0001-8564-3504/person""
+          "path": "/0000-0001-8564-3504/person"
         }
-        ";
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        Person person = await service.FindPersonByOrcid("Doesn't matter will return set response anyway");
-        
-        Assert.NotNull(person);
-        Assert.Equal("mark", person.FirstName);
-        Assert.Equal("Jensen", person.LastName);
-        Assert.NotNull(person.Biography);
-        Assert.Equal("MJ", person.CreditName);
-        
+        """;
+        SetupHttpResponse(HttpStatusCode.OK, json);
+
+        // Act
+        PersonRetrievalService service = CreateTestService();
+        OrcidPerson orcidPerson = await service.FindPersonByOrcid("0000-0001-8564-3504");
+
+        // Assert
+        Assert.NotNull(orcidPerson);
+        Assert.Equal("mark", orcidPerson.FirstName);
+        Assert.Equal("Jensen", orcidPerson.LastName);
+        Assert.Equal("MJ", orcidPerson.CreditName);
+        Assert.Equal("Upstanding citizen by day but at night he transforms into the rizzler", orcidPerson.Biography);
+        Assert.Equal("0000-0001-8564-3504", orcidPerson.Orcid);
     }
-    
+
     [Fact]
     public async Task PersonSearchByName()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
+        // Arrange
+        // First set up the search result
+        const string searchJson = """
         {
-          ""result"" : [
+          "result" : [
             {
-              ""orcid-identifier"" : {
-                ""uri"" : ""https://sandbox.orcid.org/0000-0002-7614-2895"",
-                ""path"" : ""0000-0002-7614-2895"",
-                ""host"" : ""sandbox.orcid.org""
+              "orcid-identifier" : {
+                "uri" : "https://sandbox.orcid.org/0000-0002-7614-2895",
+                "path" : "0000-0002-7614-2895",
+                "host" : "sandbox.orcid.org"
               }
             }
           ],
-          ""num-found"": 1
+          "num-found": 1
         }
-        ";
-        
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        HttpResponseMessage personResponse = new();
-        personResponse.StatusCode = System.Net.HttpStatusCode.OK;
-        string personJson = @"
+        """;
+
+        // Setup the person detail that will be returned when fetching by ID
+        const string personJson = """
         {
-          ""last-modified-date"": null,
-          ""name"": {
-            ""created-date"": {
-              ""value"": 1487783344822
+          "last-modified-date": null,
+          "name": {
+            "created-date": {
+              "value": 1487783344822
             },
-            ""last-modified-date"": {
-              ""value"": 1487783345135
+            "last-modified-date": {
+              "value": 1487783345135
             },
-            ""given-names"": {
-              ""value"": ""mark""
+            "given-names": {
+              "value": "mark"
             },
-            ""family-name"": {
-              ""value"": ""Jensen""
+            "family-name": {
+              "value": "Jensen"
             },
-            ""credit-name"": {
-              ""value"": ""MJ""
+            "credit-name": {
+              "value": "MJ"
             },
-            ""source"": null,
-            ""visibility"": ""PUBLIC"",
-            ""path"": ""0000-0001-8564-3504""
+            "source": null,
+            "visibility": "PUBLIC",
+            "path": "0000-0002-7614-2895"
           },
-          ""other-names"": {
-            ""last-modified-date"": null,
-            ""other-name"": [],
-            ""path"": ""/0000-0001-8564-3504/other-names""
-          },
-          ""biography"": {
-              ""value"": ""Upstanding citizen by day but at night he transforms into the rizzler""
+          "biography": {
+              "value": "Upstanding citizen by day but at night he transforms into the rizzler"
             },
-          ""researcher-urls"": {
-            ""last-modified-date"": null,
-            ""researcher-url"": [],
-            ""path"": ""/0000-0001-8564-3504/researcher-urls""
-          },
-          ""emails"": {
-            ""last-modified-date"": null,
-            ""email"": [],
-            ""path"": ""/0000-0001-8564-3504/email""
-          },
-          ""addresses"": {
-            ""last-modified-date"": null,
-            ""address"": [],
-            ""path"": ""/0000-0001-8564-3504/address""
-          },
-          ""keywords"": {
-            ""last-modified-date"": null,
-            ""keyword"": [],
-            ""path"": ""/0000-0001-8564-3504/keywords""
-          },
-          ""external-identifiers"": {
-            ""last-modified-date"": null,
-            ""external-identifier"": [],
-            ""path"": ""/0000-0001-8564-3504/external-identifiers""
-          },
-          ""path"": ""/0000-0001-8564-3504/person""
+          "path": "/0000-0002-7614-2895/person"
         }
-        ";
-        personResponse.Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes(personJson)));
-        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(req =>
-            req.Method == HttpMethod.Get &&
-            req.RequestUri != null &&
-            req.RequestUri.ToString() == $"https://pub.sandbox.orcid.org/v3.0/0000-0002-7614-2895/person"),  ItExpr.IsAny<CancellationToken>()).Returns(Task.FromResult(personResponse));
-        List<Person> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
+        """;
+
+        // Setup the search response
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.RequestUri!.ToString().Contains("search")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson)
+            });
+
+        // Setup the person detail response
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.RequestUri!.ToString().Contains("0000-0002-7614-2895/person")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(personJson)
+            });
+
+        // Act
+        PersonRetrievalService service = CreateTestService();
+        var people = await service.FindPeopleByName("mark", 100);
+
+        // Assert
         Assert.Single(people);
-        var person = people[0];
+        OrcidPerson person = people[0];
         Assert.NotNull(person);
         Assert.Equal("mark", person.FirstName);
         Assert.Equal("Jensen", person.LastName);
-        Assert.NotNull(person.Biography);
         Assert.Equal("MJ", person.CreditName);
+        Assert.Equal("Upstanding citizen by day but at night he transforms into the rizzler", person.Biography);
+        Assert.Equal("0000-0002-7614-2895", person.Orcid);
     }
-    
+
     [Fact]
     public async Task PersonSearchByNameJsonExceptionSecondResponse()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
+        // Arrange
+        // First set up the search result
+        const string searchJson = """
         {
-          ""result"" : [
+          "result" : [
             {
-              ""orcid-identifier"" : {
-                ""uri"" : ""https://sandbox.orcid.org/0000-0002-7614-2895"",
-                ""path"" : ""0000-0002-7614-2895"",
-                ""host"" : ""sandbox.orcid.org""
+              "orcid-identifier" : {
+                "uri" : "https://sandbox.orcid.org/0000-0002-7614-2895",
+                "path" : "0000-0002-7614-2895",
+                "host" : "sandbox.orcid.org"
               }
             }
           ],
-          ""num-found"": 1
+          "num-found": 1
         }
-        ";
-        
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        HttpResponseMessage personResponse = new();
-        personResponse.StatusCode = System.Net.HttpStatusCode.OK;
-        string personJson = @"
-        {{{{
-          ""last-modified-date"": null,
-          ""name"": {
-            ""created-date"": {
-              ""value"": 1487783344822
-            },
-            ""last-modified-date"": {
-              ""value"": 1487783345135
-            },
-            ""given-names"": {
-              ""value"": ""mark""
-            },
-            ""family-name"": {
-              ""value"": ""Jensen""
-            },
-            ""credit-name"": {
-              ""value"": ""MJ""
-            },
-            ""source"": null,
-            ""visibility"": ""PUBLIC"",
-            ""path"": ""0000-0001-8564-3504""
-          },
-          ""other-names"": {
-            ""last-modified-date"": null,
-            ""other-name"": [],
-            ""path"": ""/0000-0001-8564-3504/other-names""
-          },
-          ""biography"": {
-              ""value"": ""Upstanding citizen by day but at night he transforms into the rizzler""
-            },
-          ""researcher-urls"": {
-            ""last-modified-date"": null,
-            ""researcher-url"": [],
-            ""path"": ""/0000-0001-8564-3504/researcher-urls""
-          },
-          ""emails"": {
-            ""last-modified-date"": null,
-            ""email"": [],
-            ""path"": ""/0000-0001-8564-3504/email""
-          },
-          ""addresses"": {
-            ""last-modified-date"": null,
-            ""address"": [],
-            ""path"": ""/0000-0001-8564-3504/address""
-          },
-          ""keywords"": {
-            ""last-modified-date"": null,
-            ""keyword"": [],
-            ""path"": ""/0000-0001-8564-3504/keywords""
-          },
-          ""external-identifiers"": {
-            ""last-modified-date"": null,
-            ""external-identifier"": [],
-            ""path"": ""/0000-0001-8564-3504/external-identifiers""
-          },
-          ""path"": ""/0000-0001-8564-3504/person""
-        }}}
-        ";
-        personResponse.Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes(personJson)));
-        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(req =>
-            req.Method == HttpMethod.Get &&
-            req.RequestUri != null &&
-            req.RequestUri.ToString() == $"https://pub.sandbox.orcid.org/v3.0/0000-0002-7614-2895/person"),  ItExpr.IsAny<CancellationToken>()).Returns(Task.FromResult(personResponse));
+        """;
+
+        // Setup the person detail that will be returned when fetching by ID, with invalid JSON
+        const string invalidPersonJson = "{{{{ Invalid JSON here";
+
+        // Setup the search response
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.RequestUri!.ToString().Contains("search")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson)
+            });
+
+        // Setup the person detail response with invalid JSON
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.RequestUri!.ToString().Contains("0000-0002-7614-2895/person")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(invalidPersonJson)
+            });
+
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
         await Assert.ThrowsAsync<OrcidServiceException>(() =>
-            service.FindPeopleByName("Doesnt matter will return set response", 10));
+            service.FindPeopleByName("mark", 10));
     }
-    
+
     [Fact]
     public async Task PersonSearchByNameNoMatches()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
+        // Arrange
+        const string json = """
         {
-          ""result"" : [],
-        ""num-found"": 0
+          "result" : [],
+          "num-found": 0
         }
-        ";
-        MemoryStream peopleStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(peopleStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        List<Person> people = await service.FindPeopleByName("Doesn't matter will return set response anyway", 100);
+        """;
+        SetupHttpResponse(HttpStatusCode.OK, json);
+
+        // Act
+        PersonRetrievalService service = CreateTestService();
+        var people = await service.FindPeopleByName("no-match", 100);
+
+        // Assert
         Assert.NotNull(people);
         Assert.Empty(people);
     }
@@ -382,706 +313,378 @@ public class PersonRetrievalServiceTests
     [Fact]
     public async Task PersonSearchByNameBadResponse()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+        // Arrange
+        SetupHttpResponse(HttpStatusCode.BadRequest, "Bad Request");
 
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPeopleByName("mark", 100));
     }
-    
+
     [Fact]
     public async Task PersonSearchByNameHttpException()
     {
-        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+        // Arrange
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Simulated network error"));
 
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPeopleByName("mark", 100));
     }
-    
+
     [Fact]
     public async Task PersonSearchByNameJsonExceptionFirstResponse()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
-        {
-          ""result"" : [],
-        ""num-found"": 0
-        }}
-        ";
-        MemoryStream peopleStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(peopleStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByName("Doesn't matter will return set response anyway", 100));
+        // Arrange
+        const string invalidJson = """{ "result": [ Invalid JSON here""";
+        SetupHttpResponse(HttpStatusCode.OK, invalidJson);
+
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPeopleByName("mark", 100));
     }
-    
+
     [Fact]
     public async Task PersonRetrievalBadResponse()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+        // Arrange
+        SetupHttpResponse(HttpStatusCode.BadRequest, "Bad Request");
 
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPersonByOrcid("0000-0001-8564-3504"));
     }
-    
+
     [Fact]
     public async Task PersonRetrievalHttpException()
     {
-        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+        // Arrange
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Simulated network error"));
 
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPersonByOrcid("0000-0001-8564-3504"));
     }
-    
+
     [Fact]
     public async Task PersonRetrievalJsonException()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
-        {
-          ""last-modified-date"": null,
-          ""name"": {
-            ""created-date"": {
-              ""value"": 1487783344822
-            },
-            ""last-modified-date"": {
-              ""value"": 1487783345135
-            },
-            ""given-names"": {
-              ""value"": ""mark""
-            },
-            ""family-name"": null,
-            ""credit-name"": null,
-            ""source"": null,
-            ""visibility"": ""PUBLIC"",
-            ""path"": ""0000-0001-8564-3504""
-          },
-          ""other-names"": {
-            ""last-modified-date"": null,
-            ""other-name"": [],
-            ""path"": ""/0000-0001-8564-3504/other-names""
-          },
-          ""biography"": null,
-          ""researcher-urls"": {
-            ""last-modified-date"": null,
-            ""researcher-url"": [],
-            ""path"": ""/0000-0001-8564-3504/researcher-urls""
-          },
-          ""emails"": {
-            ""last-modified-date"": null,
-            ""email"": [],
-            ""path"": ""/0000-0001-8564-3504/email""
-          },
-          ""addresses"": {
-            ""last-modified-date"": null,
-            ""address"": [],
-            ""path"": ""/0000-0001-8564-3504/address""
-          },
-          ""keywords"": {
-            ""last-modified-date"": null,
-            ""keyword"": [],
-            ""path"": ""/0000-0001-8564-3504/keywords""
-          },
-          ""external-identifiers"": {
-            ""last-modified-date"": null,
-            ""external-identifier"": [],
-            ""path"": ""/0000-0001-8564-3504/external-identifiers""
-          },
-          ""path"": ""/0000-0001-8564-3504/person""
-        }}}}}
-        ";
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPersonByOrcid("Doesn't matter will return set response anyway"));
+        // Arrange
+        const string invalidJson = """{ "name": { "given-names": { Invalid JSON here""";
+        SetupHttpResponse(HttpStatusCode.OK, invalidJson);
+
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPersonByOrcid("0000-0001-8564-3504"));
     }
-    
-    
+
     [Fact]
     public async Task PersonSearchByNameFastJsonException()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
-        {
-          ""result"" : [],
-        ""num-found"": 0
-        }}
-        ";
-        MemoryStream peopleStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(peopleStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByNameFast("Doesn't matter will return set response anyway"));
+        // Arrange
+        const string invalidJson = """{ "expanded-result": [ Invalid JSON here""";
+        SetupHttpResponse(HttpStatusCode.OK, invalidJson);
+
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPeopleByNameFast("mark"));
     }
-    
+
     [Fact]
     public async Task PersonRetrievalFastBadResponse()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByNameFast("Doesn't matter will return set response anyway"));
+        // Arrange
+        SetupHttpResponse(HttpStatusCode.BadRequest, "Bad Request");
 
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPeopleByNameFast("mark"));
     }
-    
+
     [Fact]
     public async Task PersonRetrievalFastHttpException()
     {
-        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByNameFast("Doesn't matter will return set response anyway"));
+        // Arrange
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Simulated network error"));
 
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.FindPeopleByNameFast("mark"));
     }
 
-    [Fact]
-    public async Task PersonRetrievalFastWrongVersionHttpException()
-    {
-        _client = new(_messageHandlerMock.Object);
-        _client.BaseAddress = new Uri(PersonRetrievalServiceOptions.OrcidSandboxUrlPreviousVersion);
-        _options.Setup(options => options.BuildHttpClient()).Returns(_client);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.FindPeopleByNameFast("Doesn't matter will return set response anyway"));
-    }
     [Fact]
     public async Task PersonRetrievalFastGoodCase()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
+        // Arrange
+        const string json = """
         {
-          ""expanded-result"" : [ {
-            ""orcid-id"" : ""0000-0002-0380-1984"",
-            ""given-names"" : ""brenda"",
-            ""family-names"" : ""marshall"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
+          "expanded-result" : [ {
+            "orcid-id" : "0000-0002-0380-1984",
+            "given-names" : "brenda",
+            "family-names" : "marshall",
+            "credit-name" : null,
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
           }, {
-            ""orcid-id"" : ""0000-0003-1890-8271"",
-            ""given-names"" : ""Brenda Heaton, MPH"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : ""Brenda Heaton, MPH"",
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-4286-1306"",
-            ""given-names"" : ""Brenda J. Waning, MPH"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : ""Brenda J. Waning, MPH"",
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-1779-572X"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bwaning@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-3316-8742"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bwaning456@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-6993-4838"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bwaning496@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0002-4725-1512"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Medeiros"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""Universidade Federal de São Carlos"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-9154-5636"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Deely"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bdeely@bepress.com"" ],
-            ""institution-name"" : [ ""Bepress (United States)"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-7424-8357"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""brenda9456@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-1597-6677"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""brenda9@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-8800-6551"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""brenda9496@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-1927-387X"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Schlagenhauf"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-9071-7691"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Dean"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-7807-7898"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Dean"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-1826-0949"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Dean"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-2755-4129"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Linares"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-1034-6860"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Barrie"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-5985-448X"",
-            ""given-names"" : ""brenda"",
-            ""family-names"" : ""jones"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-6034-3038"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Njoko"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0005-2448-5991"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Tandayu"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0007-8875-055X"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Young"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0009-3210-3753"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Carter"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0006-3132-4704"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Lemons"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-6087-6037"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Cross"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-0357-0415"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Griffith-Williams"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-8612-6266"",
-            ""given-names"" : ""BRENDA"",
-            ""family-names"" : ""BUITRAGO"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-4528-628X"",
-            ""given-names"" : ""BRENDA"",
-            ""family-names"" : ""ROMERO"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""University of Colorado Boulder"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-9442-8996"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""Boston University Goldman School of Dental Medicine"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-5427-9893"",
-            ""given-names"" : ""BRENDA"",
-            ""family-names"" : ""ROMERO"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""University of Colorado Boulder"" ]
-          }, {
-            ""orcid-id"" : ""0000-0003-1631-1746"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""Boston University School of Medicine"" ]
-          } ],
-          ""num-found"" : 30
+            "orcid-id" : "0000-0003-1890-8271",
+            "given-names" : "Brenda Heaton, MPH",
+            "family-names" : "Heaton",
+            "credit-name" : "Brenda Heaton, MPH",
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
+          }],
+          "num-found" : 2
         }
-        ";
-        
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        List<Person> people = await service.FindPeopleByNameFast("Doesn't matter will return set response anyway");
-        Assert.Equal(30, people.Count);
-        var person = people[0];
-        Assert.NotNull(person);
-        Assert.Equal("brenda", person.FirstName);
-        Assert.Equal("marshall", person.LastName);
-        Assert.Null(person.Biography);
-        Assert.Null(person.CreditName);
+        """;
+        SetupHttpResponse(HttpStatusCode.OK, json);
+
+        // Act
+        PersonRetrievalService service = CreateTestService();
+        var people = await service.FindPeopleByNameFast("brenda");
+
+        // Assert
+        Assert.Equal(2, people.Count);
+        Assert.Equal("brenda", people[0].FirstName);
+        Assert.Equal("marshall", people[0].LastName);
+        Assert.Null(people[0].CreditName);
+        Assert.Equal("0000-0002-0380-1984", people[0].Orcid);
+        Assert.Equal("Brenda Heaton, MPH", people[1].FirstName);
+        Assert.Equal("Heaton", people[1].LastName);
+        Assert.Equal("Brenda Heaton, MPH", people[1].CreditName);
+        Assert.Equal("0000-0003-1890-8271", people[1].Orcid);
     }
-    
+
     [Fact]
     public async Task SearchRequestAndParseGoodCase()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = @"
+        // Arrange
+        const string json = """
         {
-          ""expanded-result"" : [ {
-            ""orcid-id"" : ""0000-0002-0380-1984"",
-            ""given-names"" : ""brenda"",
-            ""family-names"" : ""marshall"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
+          "expanded-result" : [ {
+            "orcid-id" : "0000-0002-0380-1984",
+            "given-names" : "brenda",
+            "family-names" : "marshall",
+            "credit-name" : null,
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
           }, {
-            ""orcid-id"" : ""0000-0003-1890-8271"",
-            ""given-names"" : ""Brenda Heaton, MPH"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : ""Brenda Heaton, MPH"",
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-4286-1306"",
-            ""given-names"" : ""Brenda J. Waning, MPH"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : ""Brenda J. Waning, MPH"",
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-1779-572X"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bwaning@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-3316-8742"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bwaning456@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-6993-4838"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bwaning496@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0002-4725-1512"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Medeiros"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""Universidade Federal de São Carlos"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-9154-5636"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Deely"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""bdeely@bepress.com"" ],
-            ""institution-name"" : [ ""Bepress (United States)"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-7424-8357"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""brenda9456@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-1597-6677"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""brenda9@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-8800-6551"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ""brenda9496@bu.edu"" ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-1927-387X"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Schlagenhauf"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-9071-7691"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Dean"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-7807-7898"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Dean"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-1826-0949"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Dean"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-2755-4129"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Linares"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-1034-6860"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Barrie"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-5985-448X"",
-            ""given-names"" : ""brenda"",
-            ""family-names"" : ""jones"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-6034-3038"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Njoko"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0005-2448-5991"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Tandayu"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0007-8875-055X"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Young"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0009-3210-3753"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Carter"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0009-0006-3132-4704"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Lemons"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0001-6087-6037"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Cross"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0003-0357-0415"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Griffith-Williams"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-8612-6266"",
-            ""given-names"" : ""BRENDA"",
-            ""family-names"" : ""BUITRAGO"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ]
-          }, {
-            ""orcid-id"" : ""0000-0002-4528-628X"",
-            ""given-names"" : ""BRENDA"",
-            ""family-names"" : ""ROMERO"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""University of Colorado Boulder"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-9442-8996"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Heaton"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""Boston University Goldman School of Dental Medicine"" ]
-          }, {
-            ""orcid-id"" : ""0000-0001-5427-9893"",
-            ""given-names"" : ""BRENDA"",
-            ""family-names"" : ""ROMERO"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""University of Colorado Boulder"" ]
-          }, {
-            ""orcid-id"" : ""0000-0003-1631-1746"",
-            ""given-names"" : ""Brenda"",
-            ""family-names"" : ""Waning"",
-            ""credit-name"" : null,
-            ""other-name"" : [ ],
-            ""email"" : [ ],
-            ""institution-name"" : [ ""Boston University School of Medicine"" ]
-          } ],
-          ""num-found"" : 30
+            "orcid-id" : "0000-0003-1890-8271",
+            "given-names" : "Brenda Heaton, MPH",
+            "family-names" : "Heaton",
+            "credit-name" : "Brenda Heaton, MPH",
+            "other-name" : [ ],
+            "email" : [ ],
+            "institution-name" : [ ]
+          }],
+          "num-found" : 2
         }
-        ";
-        
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        List<PersonExpandedSearchResult> people = await service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "expanded-result");
-        Assert.Equal(30, people.Count);
-        var person = people[0];
-        Assert.NotNull(person);
-        Assert.Equal("brenda", person.FirstName);
-        Assert.Equal("marshall", person.LastName);
-        Assert.Null(person.CreditName);
+        """;
+        SetupHttpResponse(HttpStatusCode.OK, json);
+
+        // Act
+        PersonRetrievalService service = CreateTestService();
+        var people =
+            await service.SearchResultRequestAndParse<PersonExpandedSearchResult>("expanded-search?q=brenda",
+                "expanded-result");
+
+        // Assert
+        Assert.Equal(2, people.Count);
+        Assert.Equal("brenda", people[0].FirstName);
+        Assert.Equal("marshall", people[0].LastName);
+        Assert.Null(people[0].CreditName);
     }
+
     [Fact]
     public async Task SearchRequestAndParseJsonException()
     {
-        _response.StatusCode = System.Net.HttpStatusCode.OK;
-        string json = "klsdfjlsdfj";
-        
-        MemoryStream personStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-        _response.Content = new StreamContent(personStream);
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "expanded-result"));
-        
+        // Arrange
+        const string invalidJson = "Invalid JSON data";
+        SetupHttpResponse(HttpStatusCode.OK, invalidJson);
+
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.SearchResultRequestAndParse<PersonExpandedSearchResult>("expanded-search?q=brenda",
+                "expanded-result"));
     }
+
     [Fact]
     public async Task SearchRequestAndParseHttpException()
     {
-        _messageHandlerMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),  ItExpr.IsAny<CancellationToken>()).Throws(new HttpRequestException());
-        PersonRetrievalService service = new PersonRetrievalService(_options.Object);
-        await Assert.ThrowsAsync<OrcidServiceException>(() => service.SearchResultRequestAndParse<PersonExpandedSearchResult>("Doesn't matter will return set response anyway", "sldfjlsdkj"));
+        // Arrange
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Simulated network error"));
 
+        // Act & Assert
+        PersonRetrievalService service = CreateTestService();
+        await Assert.ThrowsAsync<OrcidServiceException>(() =>
+            service.SearchResultRequestAndParse<PersonExpandedSearchResult>("expanded-search?q=brenda",
+                "expanded-result"));
+    }
+
+    [Fact]
+    public async Task MaxResultsIsRespected()
+    {
+        // Arrange
+        // Create multiple search results
+        var searchResults = new List<string>();
+        for (int i = 0; i < 30; i++)
+        {
+            searchResults.Add($$"""
+            {
+              "orcid-identifier" : {
+                "uri" : "https://sandbox.orcid.org/0000-0002-7614-{{i:D4}}",
+                "path" : "0000-0002-7614-{{i:D4}}",
+                "host" : "sandbox.orcid.org"
+              }
+            }
+            """);
+        }
+
+        string searchJson = $$"""
+        {
+          "result" : [{{string.Join(",", searchResults)}}],
+          "num-found": 30
+        }
+        """;
+
+        // Create a template for each index value
+        string CreatePersonJson(int index) =>
+            $$"""
+            {
+              "last-modified-date": null,
+              "name": {
+                "created-date": {
+                  "value": 1487783344822
+                },
+                "last-modified-date": {
+                  "value": 1487783345135
+                },
+                "given-names": {
+                  "value": "Person_{{index}}"
+                },
+                "family-name": {
+                  "value": "Last_{{index}}"
+                },
+                "credit-name": null,
+                "source": null,
+                "visibility": "PUBLIC",
+                "path": "0000-0002-7614-{{index:D4}}"
+              },
+              "biography": null,
+              "path": "/0000-0002-7614-{{index:D4}}/person"
+            }
+            """;
+
+        // Setup the search response
+        _messageHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.RequestUri!.ToString().Contains("search")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(searchJson)
+            });
+
+        // Setup individual person responses
+        for (int i = 0; i < 30; i++)
+        {
+            string orcid = $"0000-0002-7614-{i:D4}";
+            string personJson = CreatePersonJson(i);
+
+            _messageHandlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req =>
+                        req.Method == HttpMethod.Get &&
+                        req.RequestUri!.ToString().Contains($"{orcid}/person")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(personJson)
+                });
+        }
+
+        // Act
+        // Create a service with customized options to limit to TestMaxResults (20)
+        PersonRetrievalService service = CreateTestService();
+        var people = await service.FindPeopleByName("test-name", 100); // Request more than MaxResults
+
+        // Assert
+        Assert.Equal(TestMaxResults, people.Count); // Should be limited by TestMaxResults (20), not 100
+
+        // Check that the first few results are as expected
+        Assert.Equal("Person_0", people[0].FirstName);
+        Assert.Equal("Last_0", people[0].LastName);
+        Assert.Equal("0000-0002-7614-0000", people[0].Orcid);
+
+        Assert.Equal("Person_19", people[19].FirstName);
+        Assert.Equal("Last_19", people[19].LastName);
+        Assert.Equal("0000-0002-7614-0019", people[19].Orcid);
+    }
+
+    [Fact]
+    public void ApiVersionIsUsedCorrectly()
+    {
+        // Arrange
+        const string testBaseUrl = "https://sandbox.orcid.org";
+        const string customApiVersion = "v2.1";
+
+        // Act
+        PersonRetrievalServiceOptions options = new(
+            testBaseUrl,
+            FakeClientId,
+            FakeClientSecret,
+            customApiVersion);
+
+        // Assert
+        Assert.Equal("https://pub.sandbox.orcid.org/v2.1/", options.ApiUrl.ToString());
+        Assert.Equal(testBaseUrl, options.BaseUrl.ToString().TrimEnd('/'));
+    }
+
+    [Fact]
+    public void DefaultApiVersionIsUsedWhenNotProvided()
+    {
+        // Arrange
+        const string testBaseUrl = "https://sandbox.orcid.org";
+
+        // Act
+        PersonRetrievalServiceOptions options = new(
+            testBaseUrl,
+            FakeClientId,
+            FakeClientSecret); // No API version provided
+
+        // Assert
+        Assert.Equal($"https://pub.sandbox.orcid.org/{PersonRetrievalServiceOptions.DefaultApiVersion}/",
+            options.ApiUrl.ToString());
+        Assert.Equal(PersonRetrievalServiceOptions.MaxRecommendedResults, options.MaxResults);
     }
 }
