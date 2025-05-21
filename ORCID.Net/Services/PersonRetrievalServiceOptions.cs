@@ -3,126 +3,62 @@
 // 
 // © Copyright Utrecht University (Department of Information and Computing Sciences)
 
-using System.Text.Json;
-using ORCID.Net.Models;
-
 namespace ORCID.Net.Services;
 
+/// <summary>
+/// Options for configuring the <see cref="PersonRetrievalService"/>.
+/// </summary>
 public class PersonRetrievalServiceOptions
 {
-    public enum OrcidType
-    {
-        Sandbox,
-        SandboxPreviousVersion,
-        Production,
-        ProductionPreviousVersion,
-    }
+    /// <summary>
+    /// The default API version to use if not specified.
+    /// </summary>
+    public const string DefaultApiVersion = "v3.0";
 
-    public const string OrcidSandboxUrl = "https://pub.sandbox.orcid.org/v3.0/";
-
-    public const string OrcidSandboxUrlPreviousVersion = "https://pub.sandbox.orcid.org/v2.1/";
-
-    public const string OrcidProductionUrl = "https://pub.orcid.org/v3.0/";
-
-    public const string OrcidProductionUrlPreviousVersion = "https://pub.orcid.org/v2.1/";
-
-    public const string OrcidSandboxAuthUrl = "https://sandbox.orcid.org/oauth/token";
-    public const string OrcidProductionAuthUrl = "https://orcid.org/oauth/token";
-
-    public const string JsonMediaHeader = "application/vnd.orcid+json";
-
-    //Current implementation of searching by name on orcid means only getting matching ID's back not the actual names
-    //which means that we then have to fetch the name for each individual ID as well which is expensive therefore we limit this.
+    /// <summary>
+    /// The maximum recommended number of results to fetch when searching by name.
+    /// The current implementation of searching by name on ORCID means only getting matching ID's back, not the actual names,
+    /// which means that we then have to fetch the name for each individual ID as well, which is expensive; therefore, we limit this.
+    /// </summary>
     public const int MaxRecommendedResults = 15;
-
-    public PersonRetrievalServiceOptions(string authorizationCode, string requestUrl, string mediaHeader,
-        int maxResults)
+    
+    public PersonRetrievalServiceOptions(
+        string baseUrl,
+        string clientId,
+        string clientSecret,
+        string? apiVersion = DefaultApiVersion,
+        int maxResults = MaxRecommendedResults)
     {
-        AuthorizationCode = authorizationCode;
-        RequestUrl = requestUrl;
-        MediaHeader = mediaHeader;
-        MaxResults = maxResults;
-        AuthUrl = OrcidSandboxAuthUrl;
-    }
-
-    public PersonRetrievalServiceOptions(OrcidType type, string clientId, string clientSecret, int maxResults)
-    {
-        switch (type)
-        {
-            case OrcidType.Sandbox:
-                RequestUrl = OrcidSandboxUrl;
-                AuthUrl = OrcidSandboxAuthUrl;
-                ClientId = clientId;
-                ClientSecret = clientSecret;
-                break;
-            case OrcidType.SandboxPreviousVersion:
-                RequestUrl = OrcidSandboxUrlPreviousVersion;
-                AuthUrl = OrcidSandboxAuthUrl;
-                ClientId = clientId;
-                ClientSecret = clientSecret;
-                break;
-            case OrcidType.ProductionPreviousVersion:
-                RequestUrl = OrcidProductionUrlPreviousVersion;
-                AuthUrl = OrcidProductionAuthUrl;
-                ClientId = clientId;
-                ClientSecret = clientSecret;
-                break;
-            default:
-                RequestUrl = OrcidProductionUrl;
-                AuthUrl = OrcidProductionAuthUrl;
-                ClientId = clientId;
-                ClientSecret = clientSecret;
-                break;
-        }
-
-        MediaHeader = JsonMediaHeader;
+        ClientId = clientId;
+        ClientSecret = clientSecret;
+        BaseUrl = new(baseUrl);
+        // Format public api URL
+        ApiUrl = new($"{BaseUrl.Scheme}://pub.{BaseUrl.Host}/{apiVersion}/");
         MaxResults = maxResults;
     }
 
-    public string RequestUrl { get; set; }
-
-    public string AuthUrl { get; set; }
-
-    public string MediaHeader { get; set; }
-
+    /// <summary>
+    /// Gets or sets the base URL for API requests (without version).
+    /// </summary>
+    public Uri BaseUrl { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the full request URL (base URL + version).
+    /// </summary>
+    public Uri ApiUrl { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the maximum number of results to retrieve.
+    /// </summary>
     public int MaxResults { get; set; }
 
-    public string? AuthorizationCode { get; set; }
-
+    /// <summary>
+    /// Gets or sets the client ID for OAuth.
+    /// </summary>
     public string? ClientId { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the client secret for OAuth.
+    /// </summary>
     public string? ClientSecret { get; set; }
-
-    public DateTime? ExpirationDate { get; set; }
-
-    public virtual HttpClient BuildRequestClient()
-    {
-        HttpClient client = new();
-        client.BaseAddress = new(RequestUrl);
-        return client;
-    }
-
-    public async Task InitializeAuthorizationToken()
-    {
-        HttpClient client = new();
-        FormUrlEncodedContent content = new(new[]
-        {
-            new KeyValuePair<string, string>("client_id", ClientId),
-            new KeyValuePair<string, string>("client_secret", ClientSecret),
-            new KeyValuePair<string, string>("scope", "/read-public"),
-            new KeyValuePair<string, string>("grant_type", "client_credentials"),
-        });
-        HttpResponseMessage response = await client.PostAsync(AuthUrl, content);
-        if (response.IsSuccessStatusCode)
-        {
-            string result = await response.Content.ReadAsStringAsync();
-            AuthResponse? token = JsonSerializer.Deserialize<AuthResponse>(result);
-            if (token != null)
-            {
-                AuthorizationCode = token.Token;
-                ExpirationDate = DateTime.UtcNow.AddSeconds(token.ExpiresIn ?? 0);
-            }
-        }
-    }
-
-    public bool IsAuthTokenValid() => DateTime.UtcNow < ExpirationDate;
 }
