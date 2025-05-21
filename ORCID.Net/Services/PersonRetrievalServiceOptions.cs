@@ -109,7 +109,6 @@ public class PersonRetrievalServiceOptions
         if (response.IsSuccessStatusCode)
         {
             var result = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(result);
             var token = JsonSerializer.Deserialize<AuthResponse>(result);
             if (token != null)
             {
