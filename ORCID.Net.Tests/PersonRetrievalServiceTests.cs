@@ -17,7 +17,7 @@ public class PersonRetrievalServiceTests
 
     public PersonRetrievalServiceTests()
     {
-        _options = new();
+        _options = new(PersonRetrievalServiceOptions.OrcidType.Production, "clientId", "clientSecret", 100);
         _messageHandlerMock = new();
         _client = new(_messageHandlerMock.Object);
         _client.BaseAddress = new (PersonRetrievalServiceOptions.OrcidSandboxUrl);
