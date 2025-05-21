@@ -47,7 +47,7 @@ public class PersonRetrievalService : IPersonRetrievalService
 
             if (person == null)
                 throw new OrcidServiceException(DeserializationErrorMessage, new());
-
+            person.Orcid = orcId;
             return person;
         }
         catch (HttpRequestException e)
